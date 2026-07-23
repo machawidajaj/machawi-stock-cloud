@@ -95,7 +95,7 @@
           <div class="card" style="overflow:auto"><table><thead><tr><th>صورة المنتج</th><th>المنتج</th><th>التصنيف</th><th>الوحدة</th><th>سعر الشراء</th><th>الحد الأدنى</th><th>إجراء</th></tr></thead><tbody id="productsTable"></tbody></table></div>
         </section>
         <section id="recipes" class="section">
-          <div class="toolbar"><input id="recipeSearch" class="field search" placeholder="البحث عن وصفة..."/><div class="actions"><button id="addRecipeBtn" class="btn btn-primary">+ إضافة وصفة</button></div></div>
+          <div class="toolbar"><input id="recipeSearch" class="field search" placeholder="البحث عن وصفة..."/><div class="actions"><button id="addRecipeBtn" type="button" class="btn btn-primary" onclick="window.openNewRecipe();return false;">+ إضافة وصفة</button></div></div>
           <div id="recipesGrid" class="recipe-grid"></div>
         </section>
         <section id="production" class="section">
@@ -197,6 +197,39 @@ function recipeTotalCost(r){return (r.ingredients||[]).reduce((a,i)=>a+ingredien
 function recipeUnitOptions(product,selected){let opts=product?.unit==='كغ'?['غ','كغ']:product?.unit==='لتر'?['مل','لتر']:[product?.unit||'قطعة'];return opts.map(x=>`<option ${x===selected?'selected':''}>${x}</option>`).join('')}
 function recipeFormHtml(r){return `<form id="recipeForm"><div class="form-grid"><div class="full"><label>اسم الوصفة</label><input name="name" class="field" value="${esc(r?.name||'')}" placeholder="مثال: سلطة مغربية" required></div><div><label>الوزن أو الكمية النهائية</label><input name="outputQty" type="number" min="0.001" step="0.001" class="field" value="${r?.outputQty??1}" required></div><div><label>وحدة الوصفة</label><select name="outputUnit" class="field"><option ${r?.outputUnit==='كغ'?'selected':''}>كغ</option><option ${r?.outputUnit==='لتر'?'selected':''}>لتر</option><option ${r?.outputUnit==='قطعة'?'selected':''}>قطعة</option></select></div><div class="full"><label><input name="published" type="checkbox" ${r?.published?'checked':''}> نشر الوصفة واعتمادها</label><small class="subline">النشر لا يخصم من المخزون ولا ينتج كمية؛ الوصفة مرجع للمكونات والتكلفة فقط.</small></div></div><div class="toolbar" style="margin-top:14px"><h4>مكونات الوصفة من قسم المنتجات</h4><button type="button" id="addRecipeLine" class="btn btn-yellow">+ إضافة مكوّن</button></div><div id="recipeLines"></div><div class="card" style="margin:14px 0;background:#fff8dd"><div>التكلفة الحالية للوصفة: <b id="recipeLiveTotal">0 DH</b></div><div>التكلفة لكل وحدة نهائية: <b id="recipeLivePer">0 DH</b></div><small>تتغير تلقائيًا عند تغير سعر شراء أي مادة أولية في قسم المشتريات.</small></div><div class="form-actions"><button class="btn btn-primary" style="flex:1">حفظ الوصفة</button>${r?'<button type="button" id="deleteRecipeBtn" class="btn btn-danger">حذف الوصفة</button>':''}</div></form>`}
 function bindRecipeForm(r){let ingredients=(r?.ingredients||[]).map(x=>({...x})),box=$('#recipeLines');function lineHtml(i={}){let p=state.products.find(x=>x.id===i.productId)||state.products[0];return `<div class="recipe-builder-line"><div><label>المنتج</label><select class="field rp">${state.products.map(x=>`<option value="${x.id}" ${x.id===p?.id?'selected':''}>${esc(x.name)} — ${esc(x.unit)}</option>`).join('')}</select></div><div><label>الكمية</label><input class="field rq" type="number" min="0.001" step="0.001" value="${i.qty||1}"></div><div><label>الوحدة</label><select class="field ru">${recipeUnitOptions(p,i.unit)}</select></div><button type="button" class="btn btn-danger rr">حذف</button></div>`}function render(){box.innerHTML=ingredients.map(lineHtml).join('')||'<div class="empty">لم تتم إضافة مكونات بعد</div>';[...box.querySelectorAll('.recipe-builder-line')].forEach((row,idx)=>{let ps=row.querySelector('.rp'),qs=row.querySelector('.rq'),us=row.querySelector('.ru');ps.onchange=()=>{let p=state.products.find(x=>x.id===ps.value);ingredients[idx].productId=p.id;ingredients[idx].unit=p.unit==='كغ'?'غ':p.unit==='لتر'?'مل':p.unit;render()};qs.oninput=()=>{ingredients[idx].qty=Number(qs.value)||0;live()};us.onchange=()=>{ingredients[idx].unit=us.value;live()};row.querySelector('.rr').onclick=()=>{ingredients.splice(idx,1);render()}});live()}function live(){let temp={ingredients},total=recipeTotalCost(temp),out=Number(document.querySelector('[name=outputQty]')?.value||1);$('#recipeLiveTotal').textContent=fmt(total)+' DH';$('#recipeLivePer').textContent=fmt(out>0?total/out:total)+' DH'}$('#addRecipeLine').onclick=()=>{if(!state.products.length)return alert('أضف المنتجات أولًا');let p=state.products[0];ingredients.push({productId:p.id,qty:1,unit:p.unit==='كغ'?'غ':p.unit==='لتر'?'مل':p.unit});render()};document.querySelector('[name=outputQty]').oninput=live;if($('#deleteRecipeBtn'))$('#deleteRecipeBtn').onclick=()=>{if(confirm('حذف هذه الوصفة؟')){state.recipes=state.recipes.filter(x=>x.id!==r.id);save();closeModal()}};$('#recipeForm').onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),clean=ingredients.filter(i=>i.productId&&Number(i.qty)>0);if(!clean.length)return alert('أضف مكوّنًا واحدًا على الأقل');let data={name:f.get('name'),outputQty:+f.get('outputQty'),outputUnit:f.get('outputUnit'),published:f.get('published')==='on',ingredients:clean};if(r)Object.assign(r,data);else state.recipes.push({id:uuid(),...data});save();closeModal()};render()}
+
+window.openNewRecipe = function(){
+  try{
+    if(!state.products || !state.products.length){
+      alert('أضف منتجًا واحدًا على الأقل قبل إنشاء الوصفة.');
+      return false;
+    }
+    openModal('إضافة وصفة',recipeFormHtml(null));
+    setTimeout(function(){
+      try{
+        bindRecipeForm(null);
+      }catch(err){
+        console.error('bindRecipeForm failed',err);
+        alert('تعذر فتح نموذج الوصفة: '+(err?.message||err));
+      }
+    },120);
+    return false;
+  }catch(err){
+    console.error('openNewRecipe failed',err);
+    alert('حدث خطأ أثناء فتح إضافة وصفة: '+(err?.message||err));
+    return false;
+  }
+};
+
+// Android/PWA fallback for the dynamically loaded button.
+document.addEventListener('click',function(e){
+  let btn=e.target && e.target.closest ? e.target.closest('#addRecipeBtn') : null;
+  if(!btn) return;
+  e.preventDefault();
+  e.stopPropagation();
+  window.openNewRecipe();
+},true);
+
 window.openRecipeEditor=id=>{let r=state.recipes.find(x=>x.id===id);if(!r)return;openModal('تعديل الوصفة',recipeFormHtml(r));setTimeout(()=>bindRecipeForm(r),0)};
 function renderAll(){
  const q1=($('#productSearch')?.value||'').toLowerCase(), q2=($('#inventorySearch')?.value||'').toLowerCase();
