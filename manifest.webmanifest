@@ -1,7 +1,7 @@
 {
-  "name": "Machawi Stock Cloud",
-  "short_name": "Machawi Stock",
-  "description": "نظام إدارة المنتجات والمخزون والمشتريات والإنتاج لمشاوي الدجاج",
+  "name": "Machawi Dajaj",
+  "short_name": "Machawi Dajaj",
+  "description": "نظام إدارة المخزون والإنتاج لمشاوي الدجاج",
   "lang": "ar",
   "dir": "rtl",
   "start_url": "./",

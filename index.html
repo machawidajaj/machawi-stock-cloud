@@ -4,12 +4,12 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#c40000" />
-  <title>Machawi Stock Cloud</title>
-  <meta name="application-name" content="Machawi Stock" />
+  <title>Machawi Dajaj</title>
+  <meta name="application-name" content="Machawi Dajaj" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Machawi Stock" />
+  <meta name="apple-mobile-web-app-title" content="Machawi Dajaj" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="apple-touch-icon" href="icon-192.png" />
@@ -17,10 +17,14 @@
     :root{--red:#c40000;--red2:#8f0000;--yellow:#ffc400;--bg:#f6f6f6;--card:#fff;--text:#222;--muted:#777;--line:#e7e7e7;--green:#138a36;--orange:#e67e00}
     *{box-sizing:border-box}body{margin:0;font-family:Tahoma,Arial,sans-serif;background:var(--bg);color:var(--text)}button,input,select{font:inherit}
     .hidden{display:none!important}
-    .login{min-height:100vh;display:grid;place-items:center;background:linear-gradient(135deg,var(--red),var(--red2) 60%,#5e0000)}
-    .login-card{width:min(92vw,420px);background:white;border-radius:22px;padding:28px;box-shadow:0 20px 60px #0005;border-top:10px solid var(--yellow)}
-    .brand{text-align:center}.brand-badge{width:82px;height:82px;border-radius:24px;margin:auto;background:var(--red);color:var(--yellow);display:grid;place-items:center;font-weight:900;font-size:32px;box-shadow:0 8px 20px #c4000040}
-    .brand h1{margin:14px 0 5px;color:var(--red);font-size:25px}.brand p{margin:0 0 20px;color:var(--muted)}
+    .login{min-height:100vh;display:grid;place-items:center;padding:26px 18px;background:radial-gradient(circle at 50% 34%,#d10a0a 0,#b90000 38%,#870000 78%,#670000 100%)}
+    .login-card{width:min(92vw,520px);background:#fff;border-radius:30px;padding:46px 42px 44px;box-shadow:0 28px 75px #3b000080;border-top:9px solid var(--yellow)}
+    .brand{text-align:center}.brand-badge{width:126px;height:126px;border-radius:31px;margin:auto;background:var(--red);display:grid;place-items:center;box-shadow:0 13px 28px #c400004d}
+    .brand h1{margin:24px 0 32px;color:var(--red);font-size:42px;line-height:1.1;font-weight:900;letter-spacing:-1px}.brand p{display:none}
+    .login-card label{text-align:right;font-size:20px;margin:19px 0 9px}
+    .login-card .field{padding:17px 18px;border-radius:16px;font-size:18px;background:#fff}
+    .login-card .btn{padding:17px;font-size:22px;border-radius:16px;margin-top:28px}
+    @media(max-width:600px){.login{padding:22px 18px}.login-card{width:100%;padding:34px 28px 36px;border-radius:28px}.brand-badge{width:112px;height:112px;border-radius:28px}.brand h1{font-size:36px;margin:22px 0 27px}.login-card label{font-size:18px}.login-card .field{padding:16px;font-size:17px}.login-card .btn{font-size:20px}}
     label{display:block;margin:12px 0 6px;font-weight:700}.field{width:100%;padding:13px 14px;border:1px solid #d8d8d8;border-radius:12px;outline:none}.field:focus{border-color:var(--red);box-shadow:0 0 0 3px #c4000015}
     .btn{border:0;border-radius:12px;padding:12px 16px;cursor:pointer;font-weight:800}.btn-primary{background:var(--red);color:#fff}.btn-primary:hover{background:var(--red2)}.btn-yellow{background:var(--yellow);color:#3d2c00}.btn-light{background:#f0f0f0}.btn-danger{background:#ffe5e5;color:#a00000}
     .login .btn{width:100%;margin-top:18px}.hint{font-size:12px;color:var(--muted);margin-top:12px;text-align:center}
@@ -49,16 +53,15 @@
   </style>
 </head>
 <body>
-  <div id="appSplash"><div class="splash-inner"><img src="icon-512.png" alt="Machawi Stock"><strong>Machawi Stock</strong><small>نظام إدارة المخزون والإنتاج</small></div></div>
+  <div id="appSplash"><div class="splash-inner"><img src="icon-512.png" alt="Machawi Dajaj"><strong>Machawi Dajaj</strong><small>نظام إدارة المخزون والإنتاج</small></div></div>
   <section id="loginView" class="login">
     <div class="login-card">
-      <div class="brand"><div class="brand-badge"><img src="icon-192.png" alt="شعار مشاوي الدجاج"></div><h1>Machawi Stock Cloud</h1><p>المنتجات • المخزون • المشتريات</p></div>
+      <div class="brand"><div class="brand-badge"><img src="icon-192.png" alt="شعار مشاوي الدجاج"></div><h1>Machawi Dajaj</h1></div>
       <form id="loginForm">
-        <label>اسم المستخدم</label><input id="username" class="field" value="admin" required />
-        <label>الرقم السري</label><input id="password" class="field" type="password" value="1234" required />
+        <label>اسم المستخدم</label><input id="username" class="field" placeholder="ادخل اسم المستخدم" autocomplete="username" required />
+        <label>الرقم السري</label><input id="password" class="field" type="password" placeholder="ادخل الرقم السري" autocomplete="current-password" required />
         <button class="btn btn-primary">تسجيل الدخول</button>
       </form>
-      <div class="hint">بيانات التجربة: admin / 1234</div>
     </div>
   </section>
 
@@ -130,6 +133,7 @@ function cloudHeaders(extra={}){return {'apikey':SUPABASE_KEY,'Authorization':'B
 function setCloudStatus(text,type='busy'){
   let el=document.getElementById('cloudStatus');
   if(!el){el=document.createElement('div');el.id='cloudStatus';el.style.cssText='position:fixed;left:12px;bottom:12px;z-index:9999;padding:8px 12px;border-radius:999px;font:700 12px Arial;background:#fff3b5;border:1px solid #e3bd00;box-shadow:0 4px 16px #0002';document.body.appendChild(el)}
+  el.style.display=document.getElementById('appView')?.classList.contains('hidden')?'none':'block';
   el.textContent=text;el.style.background=type==='ok'?'#e5f8ea':type==='error'?'#ffe8e8':'#fff3b5';el.style.borderColor=type==='ok'?'#72c987':type==='error'?'#e38b8b':'#e3bd00';
 }
 function normalizeStateData(d){return d&&typeof d==='object'?{products:Array.isArray(d.products)?d.products:[],purchases:Array.isArray(d.purchases)?d.purchases:[],moves:Array.isArray(d.moves)?d.moves:[],recipes:Array.isArray(d.recipes)?d.recipes:[],productions:Array.isArray(d.productions)?d.productions:[]}:structuredClone(DEFAULT_STATE)}
@@ -181,7 +185,7 @@ function persistState(){
 function save(){let active=getActiveSection();if(!persistState())return false;renderAll();restoreActiveSection(active);return true}
 const $=s=>document.querySelector(s); const fmt=n=>Number(n||0).toLocaleString('fr-FR',{maximumFractionDigits:2});
 $('#loginForm').onsubmit=e=>{e.preventDefault();if($('#username').value==='admin'&&$('#password').value==='1234'){sessionStorage.setItem('auth','1');showApp()}else alert('اسم المستخدم أو الرقم السري غير صحيح')};
-function showApp(){$('#loginView').classList.add('hidden');$('#appView').classList.remove('hidden');renderAll();loadCloudState()}
+function showApp(){$('#loginView').classList.add('hidden');$('#appView').classList.remove('hidden');let cs=document.getElementById('cloudStatus');if(cs)cs.style.display='block';renderAll();loadCloudState()}
 if(sessionStorage.getItem('auth'))showApp();
 $('#logoutBtn').onclick=()=>{sessionStorage.clear();location.reload()};
 $('#menuBtn').onclick=()=>$('#sidebar').classList.toggle('open');
@@ -293,7 +297,7 @@ window.confirmFinishProductionNow=()=>{
   setTimeout(()=>alert(`تم إنهاء التحضير وإضافة ${fmt(qty)} ${out.unit} إلى مخزون ${out.name}`),50);
 };
 $('#addRecipeBtn').onclick=()=>{if(!state.products.length)return alert('أضف المنتجات والمواد الأولية أولًا');openModal('إضافة وصفة',recipeFormHtml(null));setTimeout(()=>bindRecipeForm(null),0)};
-renderAll();setCloudStatus('نسخة سحابية جديدة');
+renderAll();
 function updateProductionTimers(){document.querySelectorAll('.production-timer').forEach(el=>{let op=state.productions.find(x=>x.id===el.dataset.productionId);if(op)el.textContent=elapsedText(op)})} updateProductionTimers();setInterval(updateProductionTimers,1000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateProductionTimers()});
 </script>
 
