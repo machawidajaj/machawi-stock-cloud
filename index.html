@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#c40000" />
   <title>Machawi Stock Cloud</title>
+  <meta name="application-name" content="Machawi Stock" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Machawi Stock" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
   <style>
     :root{--red:#c40000;--red2:#8f0000;--yellow:#ffc400;--bg:#f6f6f6;--card:#fff;--text:#222;--muted:#777;--line:#e7e7e7;--green:#138a36;--orange:#e67e00}
     *{box-sizing:border-box}body{margin:0;font-family:Tahoma,Arial,sans-serif;background:var(--bg);color:var(--text)}button,input,select{font:inherit}
@@ -33,12 +41,18 @@
     .product-detail-head{display:grid;grid-template-columns:110px 1fr;gap:16px;align-items:center}.product-detail-head h3{margin:0 0 12px;color:var(--red)}.detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.detail-grid div{background:#fafafa;border:1px solid var(--line);border-radius:12px;padding:10px}.detail-grid small,.detail-grid b{display:block}.detail-grid b{margin-top:5px;color:var(--red)}
     .moves-list{display:grid;gap:9px}.move-card{display:grid;grid-template-columns:1fr auto;gap:8px;border:1px solid var(--line);border-right:6px solid #888;border-radius:12px;padding:12px}.move-card.in{border-right-color:var(--green)}.move-card.out{border-right-color:var(--red)}.move-card.adjust{border-right-color:var(--orange)}.move-card small,.move-card time{display:block;color:var(--muted);font-size:12px;margin-top:4px}.move-card time{grid-column:1/-1}.product-picker{display:grid;gap:9px}.picker-item{display:grid;grid-template-columns:54px 1fr auto;gap:12px;align-items:center;text-align:right;border:1px solid var(--line);background:#fff;border-radius:13px;padding:9px;cursor:pointer}.picker-item:hover{background:#fff9df}.picker-item img{width:54px;height:54px;border-radius:11px;object-fit:cover}.picker-item b{color:var(--red)}
     @media(max-width:600px){.selected-component{grid-template-columns:44px 1fr auto}.selected-component .comp-qty-wrap{grid-column:1/-1}.picker-tools{grid-template-columns:1fr}.product-detail-head{grid-template-columns:1fr;text-align:center}.product-detail-head img{margin:auto}.detail-grid{grid-template-columns:1fr 1fr}.form-actions{flex-direction:column}}
+  
+    .brand-badge img{width:100%;height:100%;object-fit:cover;border-radius:24px;display:block}
+    #appSplash{position:fixed;inset:0;z-index:99999;background:linear-gradient(145deg,#c40000,#8f0000);display:grid;place-items:center;transition:opacity .35s ease,visibility .35s ease}
+    #appSplash.hide{opacity:0;visibility:hidden}
+    .splash-inner{text-align:center;color:#fff}.splash-inner img{width:150px;height:150px;border-radius:34px;box-shadow:0 18px 50px #0005}.splash-inner strong{display:block;margin-top:18px;font-size:25px;color:#ffc400}.splash-inner small{display:block;margin-top:7px;opacity:.9}
   </style>
 </head>
 <body>
+  <div id="appSplash"><div class="splash-inner"><img src="icon-512.png" alt="Machawi Stock"><strong>Machawi Stock</strong><small>نظام إدارة المخزون والإنتاج</small></div></div>
   <section id="loginView" class="login">
     <div class="login-card">
-      <div class="brand"><div class="brand-badge">م</div><h1>Machawi Stock Cloud</h1><p>المنتجات • المخزون • المشتريات</p></div>
+      <div class="brand"><div class="brand-badge"><img src="icon-192.png" alt="شعار مشاوي الدجاج"></div><h1>Machawi Stock Cloud</h1><p>المنتجات • المخزون • المشتريات</p></div>
       <form id="loginForm">
         <label>اسم المستخدم</label><input id="username" class="field" value="admin" required />
         <label>الرقم السري</label><input id="password" class="field" type="password" value="1234" required />
@@ -281,6 +295,14 @@ window.confirmFinishProductionNow=()=>{
 $('#addRecipeBtn').onclick=()=>{if(!state.products.length)return alert('أضف المنتجات والمواد الأولية أولًا');openModal('إضافة وصفة',recipeFormHtml(null));setTimeout(()=>bindRecipeForm(null),0)};
 renderAll();setCloudStatus('نسخة سحابية جديدة');
 function updateProductionTimers(){document.querySelectorAll('.production-timer').forEach(el=>{let op=state.productions.find(x=>x.id===el.dataset.productionId);if(op)el.textContent=elapsedText(op)})} updateProductionTimers();setInterval(updateProductionTimers,1000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateProductionTimers()});
+</script>
+
+
+<script>
+window.addEventListener('load',()=>{
+  setTimeout(()=>document.getElementById('appSplash')?.classList.add('hide'),500);
+  if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(console.error);}
+});
 </script>
 
 </body></html>
