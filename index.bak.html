@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#c40000" />
+  <title>Machawi Stock Cloud</title>
+  <style>
+    :root{--red:#c40000;--red2:#8f0000;--yellow:#ffc400;--bg:#f6f6f6;--card:#fff;--text:#222;--muted:#777;--line:#e7e7e7;--green:#138a36;--orange:#e67e00}
+    *{box-sizing:border-box}body{margin:0;font-family:Tahoma,Arial,sans-serif;background:var(--bg);color:var(--text)}button,input,select{font:inherit}
+    .hidden{display:none!important}
+    .login{min-height:100vh;display:grid;place-items:center;background:linear-gradient(135deg,var(--red),var(--red2) 60%,#5e0000)}
+    .login-card{width:min(92vw,420px);background:white;border-radius:22px;padding:28px;box-shadow:0 20px 60px #0005;border-top:10px solid var(--yellow)}
+    .brand{text-align:center}.brand-badge{width:82px;height:82px;border-radius:24px;margin:auto;background:var(--red);color:var(--yellow);display:grid;place-items:center;font-weight:900;font-size:32px;box-shadow:0 8px 20px #c4000040}
+    .brand h1{margin:14px 0 5px;color:var(--red);font-size:25px}.brand p{margin:0 0 20px;color:var(--muted)}
+    label{display:block;margin:12px 0 6px;font-weight:700}.field{width:100%;padding:13px 14px;border:1px solid #d8d8d8;border-radius:12px;outline:none}.field:focus{border-color:var(--red);box-shadow:0 0 0 3px #c4000015}
+    .btn{border:0;border-radius:12px;padding:12px 16px;cursor:pointer;font-weight:800}.btn-primary{background:var(--red);color:#fff}.btn-primary:hover{background:var(--red2)}.btn-yellow{background:var(--yellow);color:#3d2c00}.btn-light{background:#f0f0f0}.btn-danger{background:#ffe5e5;color:#a00000}
+    .login .btn{width:100%;margin-top:18px}.hint{font-size:12px;color:var(--muted);margin-top:12px;text-align:center}
+    .app{min-height:100vh;display:grid;grid-template-columns:270px 1fr}.sidebar{background:var(--red);color:#fff;padding:18px 14px;position:sticky;top:0;height:100vh}.side-brand{padding:10px 12px 20px;border-bottom:1px solid #ffffff33}.side-brand strong{display:block;color:var(--yellow);font-size:20px}.side-brand small{opacity:.85}.nav{display:grid;gap:8px;margin-top:18px}.nav button{width:100%;text-align:right;background:transparent;color:#fff;border:0;border-radius:12px;padding:13px;cursor:pointer;font-weight:700}.nav button:hover,.nav button.active{background:var(--yellow);color:#3d2c00}.side-footer{position:absolute;bottom:18px;right:14px;left:14px}.side-footer button{width:100%}
+    .main{min-width:0}.topbar{height:72px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:3}.topbar h2{font-size:21px;margin:0}.user-chip{background:#fff7d6;border:1px solid #ffe06b;padding:8px 12px;border-radius:12px;font-size:13px}
+    .content{padding:24px}.grid{display:grid;gap:16px}.stats{grid-template-columns:repeat(4,minmax(0,1fr))}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 5px 16px #00000008}.stat strong{display:block;font-size:27px;color:var(--red);margin-top:8px}.stat small{color:var(--muted)}
+    .toolbar{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap}.toolbar .actions{display:flex;gap:8px;flex-wrap:wrap}.search{min-width:240px}
+    table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden}th,td{padding:12px 10px;border-bottom:1px solid var(--line);text-align:right;font-size:14px}th{background:#fff5cc;color:#5a4100}.badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800}.ok{background:#e5f6ea;color:var(--green)}.low{background:#fff0db;color:var(--orange)}.out{background:#ffe4e4;color:#a00000}
+    .section{display:none}.section.active{display:block}.modal{position:fixed;inset:0;background:#0008;display:grid;place-items:center;z-index:10;padding:16px}.modal-card{width:min(96vw,620px);max-height:90vh;overflow:auto;background:#fff;border-radius:18px;padding:20px}.modal-head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:12px}.modal-head h3{margin:0;color:var(--red)}.close{border:0;background:#f2f2f2;width:36px;height:36px;border-radius:50%;cursor:pointer}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.form-grid .full{grid-column:1/-1}.purchase-lines{display:grid;gap:10px}.purchase-line{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:end;background:#fafafa;padding:10px;border-radius:12px}
+    .empty{padding:30px;text-align:center;color:var(--muted)}
+    .mobile-menu{display:none}
+    @media(max-width:900px){.app{grid-template-columns:1fr}.sidebar{position:fixed;z-index:20;right:-290px;width:270px;transition:.25s}.sidebar.open{right:0}.mobile-menu{display:inline-flex}.stats{grid-template-columns:repeat(2,1fr)}.content{padding:16px}.topbar{padding:0 14px}.form-grid{grid-template-columns:1fr}.purchase-line{grid-template-columns:1fr 1fr}.purchase-line .remove{grid-column:1/-1}.search{min-width:100%}}
+  </style>
+</head>
+<body>
+  <section id="loginView" class="login">
+    <div class="login-card">
+      <div class="brand"><div class="brand-badge">م</div><h1>Machawi Stock Cloud</h1><p>المنتجات • المخزون • المشتريات</p></div>
+      <form id="loginForm">
+        <label>اسم المستخدم</label><input id="username" class="field" value="admin" required />
+        <label>الرقم السري</label><input id="password" class="field" type="password" value="1234" required />
+        <button class="btn btn-primary">تسجيل الدخول</button>
+      </form>
+      <div class="hint">بيانات التجربة: admin / 1234</div>
+    </div>
+  </section>
+
+  <section id="appView" class="app hidden">
+    <aside id="sidebar" class="sidebar">
+      <div class="side-brand"><strong>مشاوي الدجاج</strong><small>نظام المخزون السحابي</small></div>
+      <div class="nav">
+        <button data-section="dashboard" class="active">لوحة التحكم</button>
+        <button data-section="products">المنتجات</button>
+        <button data-section="inventory">المخزون</button>
+        <button data-section="purchases">المشتريات</button>
+      </div>
+      <div class="side-footer"><button id="logoutBtn" class="btn btn-yellow">تسجيل الخروج</button></div>
+    </aside>
+    <main class="main">
+      <header class="topbar"><div style="display:flex;gap:10px;align-items:center"><button id="menuBtn" class="btn btn-light mobile-menu">☰</button><h2 id="pageTitle">لوحة التحكم</h2></div><div class="user-chip">المستخدم: المدير</div></header>
+      <div class="content">
+        <section id="dashboard" class="section active">
+          <div class="grid stats">
+            <div class="card stat"><small>عدد المنتجات</small><strong id="sProducts">0</strong></div>
+            <div class="card stat"><small>قيمة المخزون</small><strong id="sValue">0 DH</strong></div>
+            <div class="card stat"><small>مخزون منخفض</small><strong id="sLow">0</strong></div>
+            <div class="card stat"><small>مشتريات اليوم</small><strong id="sPurchases">0 DH</strong></div>
+          </div>
+          <div class="card" style="margin-top:16px"><h3>آخر الحركات</h3><div id="recentMoves"></div></div>
+        </section>
+        <section id="products" class="section">
+          <div class="toolbar"><input id="productSearch" class="field search" placeholder="البحث عن منتج..."/><div class="actions"><button id="addProductBtn" class="btn btn-primary">+ إضافة منتج</button></div></div>
+          <div class="card" style="overflow:auto"><table><thead><tr><th>المنتج</th><th>التصنيف</th><th>الوحدة</th><th>سعر الشراء</th><th>الحد الأدنى</th><th>إجراء</th></tr></thead><tbody id="productsTable"></tbody></table></div>
+        </section>
+        <section id="inventory" class="section">
+          <div class="toolbar"><input id="inventorySearch" class="field search" placeholder="البحث في المخزون..."/><div class="actions"><button id="adjustBtn" class="btn btn-yellow">تعديل الجرد</button></div></div>
+          <div class="card" style="overflow:auto"><table><thead><tr><th>المنتج</th><th>الكمية</th><th>الوحدة</th><th>القيمة</th><th>الحالة</th></tr></thead><tbody id="inventoryTable"></tbody></table></div>
+        </section>
+        <section id="purchases" class="section">
+          <div class="toolbar"><div></div><div class="actions"><button id="addPurchaseBtn" class="btn btn-primary">+ تسجيل شراء</button></div></div>
+          <div class="card" style="overflow:auto"><table><thead><tr><th>التاريخ</th><th>المورد</th><th>رقم الفاتورة</th><th>الإجمالي</th><th>طريقة الدفع</th><th>عدد المنتجات</th></tr></thead><tbody id="purchasesTable"></tbody></table></div>
+        </section>
+      </div>
+    </main>
+  </section>
+
+  <div id="modal" class="modal hidden"><div class="modal-card"><div class="modal-head"><h3 id="modalTitle"></h3><button id="closeModal" class="close">✕</button></div><div id="modalBody"></div></div></div>
+<script>
+const KEY='machawi_stock_cloud_v1';
+function uuid(){return (globalThis.crypto&&typeof globalThis.crypto.randomUUID==='function')?globalThis.crypto.randomUUID():'id-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10)}
+const state=JSON.parse(localStorage.getItem(KEY)||'null')||{products:[
+{id:uuid(),name:'دجاج طازج',category:'مواد أولية',unit:'قطعة',price:28,min:20,qty:50},
+{id:uuid(),name:'بطاطس مجمدة',category:'مواد أولية',unit:'كغ',price:9,min:15,qty:12},
+{id:uuid(),name:'أرز',category:'مواد أولية',unit:'كغ',price:14,min:10,qty:30}
+],purchases:[],moves:[]};
+function save(){localStorage.setItem(KEY,JSON.stringify(state));renderAll()}
+const $=s=>document.querySelector(s); const fmt=n=>Number(n||0).toLocaleString('fr-FR',{maximumFractionDigits:2});
+$('#loginForm').onsubmit=e=>{e.preventDefault();if($('#username').value==='admin'&&$('#password').value==='1234'){sessionStorage.setItem('auth','1');showApp()}else alert('اسم المستخدم أو الرقم السري غير صحيح')};
+function showApp(){$('#loginView').classList.add('hidden');$('#appView').classList.remove('hidden');renderAll()}
+if(sessionStorage.getItem('auth'))showApp();
+$('#logoutBtn').onclick=()=>{sessionStorage.clear();location.reload()};
+$('#menuBtn').onclick=()=>$('#sidebar').classList.toggle('open');
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));$('#'+b.dataset.section).classList.add('active');$('#pageTitle').textContent=b.textContent;$('#sidebar').classList.remove('open')});
+function status(p){if(p.qty<=0)return ['نافد','out'];if(p.qty<=p.min)return ['منخفض','low'];return ['متوفر','ok']}
+function renderAll(){
+ const q1=($('#productSearch')?.value||'').toLowerCase(), q2=($('#inventorySearch')?.value||'').toLowerCase();
+ $('#productsTable').innerHTML=state.products.filter(p=>p.name.toLowerCase().includes(q1)).map(p=>`<tr><td>${p.name}</td><td>${p.category}</td><td>${p.unit}</td><td>${fmt(p.price)} DH</td><td>${fmt(p.min)}</td><td><button class="btn btn-danger" onclick="removeProduct('${p.id}')">حذف</button></td></tr>`).join('')||`<tr><td colspan="6" class="empty">لا توجد منتجات</td></tr>`;
+ $('#inventoryTable').innerHTML=state.products.filter(p=>p.name.toLowerCase().includes(q2)).map(p=>{let s=status(p);return `<tr><td>${p.name}</td><td>${fmt(p.qty)}</td><td>${p.unit}</td><td>${fmt(p.qty*p.price)} DH</td><td><span class="badge ${s[1]}">${s[0]}</span></td></tr>`}).join('')||`<tr><td colspan="5" class="empty">المخزون فارغ</td></tr>`;
+ $('#purchasesTable').innerHTML=[...state.purchases].reverse().map(x=>`<tr><td>${x.date}</td><td>${x.supplier}</td><td>${x.invoice||'-'}</td><td>${fmt(x.total)} DH</td><td>${x.payment}</td><td>${x.lines.length}</td></tr>`).join('')||`<tr><td colspan="6" class="empty">لم يتم تسجيل مشتريات بعد</td></tr>`;
+ $('#sProducts').textContent=state.products.length;$('#sValue').textContent=fmt(state.products.reduce((a,p)=>a+p.qty*p.price,0))+' DH';$('#sLow').textContent=state.products.filter(p=>p.qty<=p.min).length;
+ let today=new Date().toISOString().slice(0,10);$('#sPurchases').textContent=fmt(state.purchases.filter(x=>x.date===today).reduce((a,x)=>a+x.total,0))+' DH';
+ $('#recentMoves').innerHTML=[...state.moves].reverse().slice(0,8).map(m=>`<div style="padding:10px 0;border-bottom:1px solid #eee"><b>${m.product}</b> — ${m.type} ${fmt(m.qty)} <small style="color:#777">${m.date}</small></div>`).join('')||'<div class="empty">لا توجد حركات بعد</div>';
+}
+$('#productSearch').oninput=renderAll;$('#inventorySearch').oninput=renderAll;
+function openModal(title,html){$('#modalTitle').textContent=title;$('#modalBody').innerHTML=html;$('#modal').classList.remove('hidden')};function closeModal(){$('#modal').classList.add('hidden')};$('#closeModal').onclick=closeModal;$('#modal').onclick=e=>{if(e.target.id==='modal')closeModal()};
+$('#addProductBtn').onclick=()=>openModal('إضافة منتج',`<form id="productForm" class="form-grid"><div class="full"><label>اسم المنتج</label><input name="name" class="field" required></div><div><label>التصنيف</label><input name="category" class="field" value="مواد أولية" required></div><div><label>الوحدة</label><select name="unit" class="field"><option>كغ</option><option>لتر</option><option>قطعة</option><option>علبة</option><option>كرتون</option></select></div><div><label>سعر الشراء</label><input name="price" type="number" step="0.01" class="field" required></div><div><label>الحد الأدنى</label><input name="min" type="number" step="0.01" class="field" value="0"></div><div class="full"><button class="btn btn-primary" style="width:100%">حفظ المنتج</button></div></form>`);setTimeout(()=>$('#productForm').onsubmit=e=>{e.preventDefault();let f=new FormData(e.target);state.products.push({id:uuid(),name:f.get('name'),category:f.get('category'),unit:f.get('unit'),price:+f.get('price'),min:+f.get('min'),qty:0});save();closeModal()},0);
+window.removeProduct=id=>{let p=state.products.find(x=>x.id===id);if(confirm('حذف المنتج '+p.name+'؟')){state.products=state.products.filter(x=>x.id!==id);save()}};
+$('#adjustBtn').onclick=()=>openModal('تعديل الجرد',`<form id="adjustForm" class="form-grid"><div class="full"><label>المنتج</label><select name="id" class="field">${state.products.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</select></div><div><label>الكمية الجديدة</label><input name="qty" type="number" step="0.01" class="field" required></div><div><label>ملاحظة</label><input name="note" class="field" value="جرد يدوي"></div><div class="full"><button class="btn btn-yellow" style="width:100%">تحديث المخزون</button></div></form>`);setTimeout(()=>$('#adjustForm').onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),p=state.products.find(x=>x.id===f.get('id')),old=p.qty;p.qty=+f.get('qty');state.moves.push({product:p.name,type:'تعديل جرد من '+old+' إلى',qty:p.qty,date:new Date().toLocaleString('ar-MA')});save();closeModal()},0);
+$('#addPurchaseBtn').onclick=()=>{if(!state.products.length)return alert('أضف منتجًا أولًا');openModal('تسجيل عملية شراء',`<form id="purchaseForm"><div class="form-grid"><div><label>المورد</label><input name="supplier" class="field" required></div><div><label>رقم الفاتورة</label><input name="invoice" class="field"></div><div><label>التاريخ</label><input name="date" type="date" class="field" value="${new Date().toISOString().slice(0,10)}" required></div><div><label>طريقة الدفع</label><select name="payment" class="field"><option>نقدًا</option><option>آجلًا</option><option>تحويل بنكي</option></select></div></div><h4>المنتجات</h4><div id="purchaseLines" class="purchase-lines"></div><button type="button" id="addLine" class="btn btn-light" style="margin:10px 0">+ إضافة سطر</button><button class="btn btn-primary" style="width:100%">تأكيد الشراء وإضافة الكميات للمخزون</button></form>`);setTimeout(()=>{let lines=$('#purchaseLines');function add(){let d=document.createElement('div');d.className='purchase-line';d.innerHTML=`<div><label>المنتج</label><select class="field prod">${state.products.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</select></div><div><label>الكمية</label><input type="number" step="0.01" class="field qty" required></div><div><label>السعر</label><input type="number" step="0.01" class="field price" required></div><button type="button" class="btn btn-danger remove">حذف</button>`;d.querySelector('.remove').onclick=()=>d.remove();d.querySelector('.prod').onchange=()=>{d.querySelector('.price').value=state.products.find(p=>p.id===d.querySelector('.prod').value).price};d.querySelector('.prod').onchange();lines.appendChild(d)}add();$('#addLine').onclick=add;$('#purchaseForm').onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),rows=[...lines.children],pls=rows.map(r=>({productId:r.querySelector('.prod').value,qty:+r.querySelector('.qty').value,price:+r.querySelector('.price').value})).filter(x=>x.qty>0);if(!pls.length)return alert('أضف كمية صحيحة');let total=0;pls.forEach(l=>{let p=state.products.find(x=>x.id===l.productId);p.qty+=l.qty;p.price=l.price;total+=l.qty*l.price;state.moves.push({product:p.name,type:'دخول شراء',qty:l.qty,date:new Date().toLocaleString('ar-MA')})});state.purchases.push({id:uuid(),supplier:f.get('supplier'),invoice:f.get('invoice'),date:f.get('date'),payment:f.get('payment'),lines:pls,total});save();closeModal()};},0)};
+renderAll();
+</script>
+</body></html>
