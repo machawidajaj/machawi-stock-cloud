@@ -247,15 +247,28 @@ $('#addPurchaseBtn').onclick=()=>{if(!state.products.length)return alert('أضف
 window.startProduction=()=>{let outputs=state.products.filter(p=>(p.components||[]).length);if(!outputs.length)return alert('أنشئ منتجًا جاهزًا وأضف مكوناته أولًا، مثل Tomate VRAC مكوّنه Tomate.');openModal('بدء عملية تحضير',`<form id="productionStartForm" class="form-grid"><div class="full"><label>المنتج المراد تحضيره</label><select name="outputProductId" id="productionOutputProduct" class="field">${outputs.map(p=>`<option value="${p.id}">${esc(p.name)} — ${p.components.length} مكوّن</option>`).join('')}</select></div><div><label>حجم دفعة التحضير</label><input name="batchQty" type="number" min="0.001" step="0.001" class="field" value="1" required></div><div><label>المسؤول / المركز</label><input name="operator" class="field" placeholder="مثال: مركز السلطة"></div><div class="full card" id="productionNeeds"></div><div class="full"><label>ملاحظة</label><input name="note" class="field"></div><div class="full"><button class="btn btn-primary" style="width:100%">خصم المكونات وبدء التوقيت</button></div></form>`);setTimeout(()=>{let form=$('#productionStartForm'),sel=$('#productionOutputProduct'),batch=form.querySelector('[name=batchQty]'),needs=$('#productionNeeds');function calc(){let out=state.products.find(x=>x.id===sel.value),mult=Number(batch.value||0);needs.innerHTML='<b>سيتم خصم:</b>'+((out?.components||[]).map(c=>{let p=state.products.find(x=>x.id===c.productId),q=Number(c.qty||0)*mult;return `<div style="margin-top:6px">${esc(p?.name||'منتج محذوف')}: <b>${fmt(q)} ${esc(p?.unit||'')}</b> — المتوفر ${fmt(p?.qty||0)}</div>`}).join('')||'<div>لا توجد مكونات</div>')}sel.onchange=calc;batch.oninput=calc;calc();form.onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),out=state.products.find(x=>x.id===f.get('outputProductId')),mult=Number(f.get('batchQty'));if(!out||!(out.components||[]).length)return alert('تركيب المنتج غير صالح');if(mult<=0)return alert('أدخل حجم دفعة صحيح');let used=out.components.map(c=>{let p=state.products.find(x=>x.id===c.productId);return {productId:c.productId,qty:Number(c.qty||0)*mult,product:p}});let missing=used.find(x=>!x.product||Number(x.product.qty)<x.qty);if(missing)return alert(`المخزون غير كافٍ في ${missing.product?.name||'أحد المكونات'}. المتوفر: ${fmt(missing.product?.qty||0)}`);let id=uuid(),now=new Date();used.forEach(x=>{x.product.qty=Number(x.product.qty||0)-x.qty;state.moves.push({id:uuid(),productId:x.product.id,product:x.product.name,type:'خروج إلى التحضير',direction:'out',qty:x.qty,note:`تحضير ${out.name} — العملية ${id}`,date:now.toLocaleString('ar-MA')})});state.productions.push({id,outputProductId:out.id,batchQty:mult,componentsUsed:used.map(x=>({productId:x.productId,qty:x.qty})),outputQty:null,status:'preparing',operator:f.get('operator'),note:f.get('note'),startedAt:now.toLocaleString('ar-MA'),startedDate:now.toISOString().slice(0,10),startedTs:now.getTime()});save();closeModal()};},0)};
 $('#startProductionBtn').onclick=startProduction;
 
-// Android/PWA fallback. The button also has a direct onclick for maximum reliability.
-document.addEventListener('click',function(e){
-  const btn=e.target.closest?.('.finish-production-btn');
-  if(!btn || btn.hasAttribute('onclick')) return;
-  e.preventDefault();
-  e.stopPropagation();
-  const id=btn.dataset.productionId;
-  if(id && typeof window.finishProduction==='function') window.finishProduction(id);
-});
+// Robust Android/PWA handler for dynamically-rendered production buttons.
+(function(){
+  let lastHandledAt=0;
+  function handleFinishButton(e){
+    let target=e.target;
+    let btn=target && target.closest ? target.closest('.finish-production-btn') : null;
+    if(!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    let now=Date.now();
+    if(now-lastHandledAt<500) return;
+    lastHandledAt=now;
+    let id=btn.getAttribute('data-production-id');
+    if(id && typeof window.finishProduction==='function'){
+      window.finishProduction(id);
+    }else{
+      alert('تعذر فتح نافذة إنهاء التحضير. أعد تحميل الصفحة.');
+    }
+  }
+  document.addEventListener('click',handleFinishButton,true);
+  document.addEventListener('touchend',handleFinishButton,true);
+})();
 
 let finishTimerHandle=null;
 window.finishProduction=id=>{
@@ -269,8 +282,26 @@ window.finishProduction=id=>{
   openModal('إنهاء التحضير',`<div class="form-grid"><div class="full card"><b>${esc(out.name)}</b><div style="margin-top:8px">إجمالي المكونات المسحوبة: ${fmt(inputTotal)}</div><div style="margin-top:8px">مدة التحضير الحالية: <b id="finishLiveTimer">${elapsedText(op)}</b></div></div><div><label>الوزن / الكمية الجاهزة</label><input id="finishOutputQty" type="number" inputmode="decimal" min="0" step="0.001" class="field" required></div><div><label>ملاحظة النهاية</label><input id="finishNote" class="field"></div><div class="full"><button id="confirmFinishProduction" type="button" class="btn btn-yellow" style="width:100%">إضافة الجاهز إلى مخزون ${esc(out.name)}</button></div></div>`);
   clearInterval(finishTimerHandle);
   finishTimerHandle=setInterval(()=>{let live=$('#finishLiveTimer'),current=state.productions.find(x=>x.id===window.currentFinishProductionId);if(live&&current&&current.status==='preparing')live.textContent=elapsedText(current);else clearInterval(finishTimerHandle)},1000);
-  setTimeout(()=>{let q=$('#finishOutputQty'),b=$('#confirmFinishProduction');q?.focus();if(b)b.onclick=(ev)=>{ev.preventDefault();window.confirmFinishProductionNow();return false};},100);
+  setTimeout(function(){
+    let q=$('#finishOutputQty'),b=$('#confirmFinishProduction');
+    if(q) q.focus();
+    if(b){
+      b.onclick=function(){
+        window.confirmFinishProductionNow();
+        return false;
+      };
+      b.addEventListener('touchend',function(ev){
+        ev.preventDefault();
+        window.confirmFinishProductionNow();
+      },{passive:false});
+    }
+  },150);
 };
+
+window.openFinishProduction = function(id){
+  return window.finishProduction(id);
+};
+
 window.confirmFinishProductionNow=()=>{
   let id=window.currentFinishProductionId;
   let op=state.productions.find(x=>x.id===id);
