@@ -194,8 +194,8 @@ state.products.forEach(p=>{
   if(!Array.isArray(p.components))p.components=[];
   if(!('productType' in p))p.productType='standard';
   if(!('outputProductId' in p))p.outputProductId='';
-  if(!('trackInventory' in p))p.trackInventory=true;
-  if(!('availableForSale' in p))p.availableForSale=Boolean((p.components||[]).length||p.productType==='prepared');
+  if(typeof p.trackInventory!=='boolean')p.trackInventory=true;
+  if(typeof p.availableForSale!=='boolean')p.availableForSale=Boolean((p.components||[]).length||p.productType==='prepared');
 });
 state.moves.forEach(m=>{if(!m.id)m.id=uuid();if(!m.productId){let p=state.products.find(x=>x.name===m.product);if(p)m.productId=p.id}if(!m.direction)m.direction=String(m.type||'').includes('دخول')?'in':String(m.type||'').includes('خروج')?'out':'adjust';if(!m.note)m.note=''});
 const placeholderImage=`data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120"><rect width="100%" height="100%" rx="18" fill="#fff3b5"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-size="46">📦</text></svg>')}`;
@@ -307,7 +307,8 @@ function selectedComponentsHtml(selected=[]){
  return selected.length?selected.map(c=>{let x=state.products.find(z=>z.id===c.productId);if(!x)return '';return `<div class="selected-component" data-id="${x.id}"><img src="${productImage(x)}"><div><span class="component-name">${esc(x.name)}</span><small class="component-meta">${esc(x.category)} • ${esc(x.unit)}</small></div><div class="comp-qty-wrap"><input type="number" min="0.001" step="0.001" class="field selected-comp-qty" value="${c.qty||1}" aria-label="كمية المكوّن"></div><button type="button" class="btn btn-danger remove-component">حذف</button></div>`}).join(''):'<div class="component-empty">لم تتم إضافة مكونات بعد. اضغط على «إضافة مكوّن» ثم ابحث عن المنتج.</div>'
 }
 function productFormHtml(p){let edit=!!p;return `<form id="productForm" class="form-grid"><div class="full"><label>صورة المنتج</label><div class="image-upload"><img id="productPreview" class="product-img-lg" src="${productImage(p)}"><div style="flex:1"><input id="productImageInput" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="field"><small style="color:#777">اختر صورة محفوظة من المعرض أو الملفات.</small>${edit&&p.image?'<button type="button" id="removeImageBtn" class="btn btn-light" style="margin-top:8px">إزالة الصورة</button>':''}</div></div></div><div class="full"><label>اسم المنتج</label><input name="name" class="field" value="${esc(p?.name||'')}" required></div><div><label>التصنيف</label><input name="category" class="field" value="${esc(p?.category||'مواد أولية')}" required></div><div><label>الوحدة</label><select name="unit" class="field">${unitOptions(p?.unit||'كغ')}</select></div><div><label>نوع المنتج</label><select name="productType" class="field"><option value="standard" ${p?.productType==='standard'?'selected':''}>منتج عادي</option><option value="raw" ${p?.productType==='raw'?'selected':''}>مادة خام للتحضير</option><option value="prepared" ${p?.productType==='prepared'?'selected':''}>منتج جاهز / VRAC</option></select></div><div><label>سعر الشراء / التكلفة <small style="color:#777">(اختياري)</small></label><input name="price" type="number" min="0" step="0.01" class="field" value="${p?.price??''}" placeholder="يُحدَّث تلقائيًا من فاتورة الشراء"><small class="subline">يمكن تركه فارغًا عند إنشاء المنتج؛ آخر سعر في فاتورة الشراء سيُعتمد تلقائيًا.</small></div><div><label>الحد الأدنى</label><input name="min" type="number" step="0.01" class="field" value="${p?.min??0}"></div><div class="full card" style="background:#fff8dd">
-  <h4 style="margin-top:0">إعدادات ظهور المنتج</h4>
+  <h4 style="margin-top:0">وجهة حفظ المنتج</h4>
+    <small class="subline">سيبقى المنتج دائمًا في قسم المنتجات، وسيُضاف إلى الأقسام التي تختارها فقط.</small>
   <label style="display:flex;align-items:center;gap:10px;margin:12px 0">
     <input name="trackInventory" type="checkbox" ${p?.trackInventory!==false?'checked':''}>
     <span><b>يُضاف إلى المخزون</b><small class="subline">يظهر في قسم المخزون وتتحرك كميته مع الشراء والإنتاج والبيع.</small></span>
@@ -342,7 +343,52 @@ function bindProductForm(p){
  input.onchange=async()=>{try{preview.src=await compressImage(input.files[0])||productImage(p)}catch(err){alert(err.message);input.value=''}};
  if($('#removeImageBtn'))$('#removeImageBtn').onclick=()=>{removeImage=true;input.value='';preview.src=placeholderImage};
  if($('#deleteProductBtn'))$('#deleteProductBtn').onclick=()=>removeProduct(p.id);
- $('#productForm').onsubmit=async e=>{e.preventDefault();let f=new FormData(e.target),btn=e.submitter;btn.disabled=true;btn.textContent='جاري الحفظ...';try{let image=p?.image||'';if(removeImage)image='';if(input.files[0])image=await compressImage(input.files[0]);let components=selected.map(c=>({productId:c.productId,qty:Number(c.qty)})).filter(c=>c.qty>0);if(p){Object.assign(p,{name:f.get('name'),category:f.get('category'),unit:f.get('unit'),productType:f.get('productType'),outputProductId:f.get('outputProductId'),price:(f.get('price')===''?0:Number(f.get('price'))||0),min:+f.get('min'),image,components})}else state.products.push({id:uuid(),name:f.get('name'),category:f.get('category'),unit:f.get('unit'),productType:f.get('productType'),outputProductId:f.get('outputProductId'),price:(f.get('price')===''?0:Number(f.get('price'))||0),min:+f.get('min'),qty:0,image,components});save();closeModal()}catch(err){alert('تعذر حفظ المنتج: '+err.message);btn.disabled=false;btn.textContent=p?'حفظ التعديلات':'حفظ المنتج'}}
+ $('#productForm').onsubmit=async e=>{
+  e.preventDefault();
+  let f=new FormData(e.target);
+  let btn=e.submitter||e.target.querySelector('button[type="submit"],button:not([type])');
+  if(btn){btn.disabled=true;btn.textContent='جاري الحفظ...'}
+  try{
+    let image=p?.image||'';
+    if(removeImage)image='';
+    if(input.files[0])image=await compressImage(input.files[0]);
+
+    let components=selected
+      .map(c=>({productId:c.productId,qty:Number(c.qty)}))
+      .filter(c=>c.qty>0);
+
+    let data={
+      name:f.get('name'),
+      category:f.get('category'),
+      unit:f.get('unit'),
+      productType:f.get('productType'),
+      outputProductId:f.get('outputProductId'),
+      price:(f.get('price')===''?0:Number(f.get('price'))||0),
+      min:Number(f.get('min'))||0,
+      image,
+      components,
+      trackInventory:f.get('trackInventory')==='on',
+      availableForSale:f.get('availableForSale')==='on'
+    };
+
+    if(p){
+      Object.assign(p,data);
+    }else{
+      state.products.push({id:uuid(),qty:0,...data});
+    }
+
+    if(!save())throw new Error('تعذر حفظ البيانات');
+    renderAll();
+    closeModal();
+    let destinations=[];
+    if(data.trackInventory)destinations.push('المخزون');
+    if(data.availableForSale)destinations.push('المبيعات');
+    let destinationText=destinations.length?destinations.join(' و '):'قسم المنتجات فقط';
+    alert('تم حفظ المنتج وإضافته إلى: '+destinationText+'.');
+  }catch(err){
+    alert('تعذر حفظ المنتج: '+(err?.message||err));
+    if(btn){btn.disabled=false;btn.textContent=p?'حفظ التعديلات':'حفظ المنتج'}
+  }
 }
 $('#addProductBtn').onclick=()=>{openModal('إضافة منتج',productFormHtml(null));setTimeout(()=>bindProductForm(null),0)};
 window.openProductEditor=id=>{let p=state.products.find(x=>x.id===id);if(!p)return;openModal('تعديل المنتج',productFormHtml(p));setTimeout(()=>bindProductForm(p),0)};
