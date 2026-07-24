@@ -75,6 +75,7 @@
         <button data-section="production">الإنتاج</button>
         <button data-section="inventory">المخزون</button>
         <button data-section="purchases">المشتريات</button>
+        <button data-section="sales">المبيعات</button>
       </div>
       <div class="side-footer"><button id="logoutBtn" class="btn btn-yellow">تسجيل الخروج</button></div>
     </aside>
@@ -87,12 +88,13 @@
             <div class="card stat"><small>قيمة المخزون</small><strong id="sValue">0 DH</strong></div>
             <div class="card stat"><small>مخزون منخفض</small><strong id="sLow">0</strong></div>
             <div class="card stat"><small>مشتريات اليوم</small><strong id="sPurchases">0 DH</strong></div>
+            <div class="card stat"><small>مبيعات اليوم</small><strong id="sDashboardSales">0 DH</strong></div>
           </div>
           <div class="card" style="margin-top:16px"><h3>آخر الحركات</h3><div id="recentMoves"></div></div>
         </section>
         <section id="products" class="section">
           <div class="toolbar"><input id="productSearch" class="field search" placeholder="البحث عن منتج..."/><div class="actions"><button id="addProductBtn" class="btn btn-primary">+ إضافة منتج</button></div></div>
-          <div class="card" style="overflow:auto"><table><thead><tr><th>صورة المنتج</th><th>المنتج</th><th>التصنيف</th><th>الوحدة</th><th>سعر الشراء</th><th>الحد الأدنى</th><th>إجراء</th></tr></thead><tbody id="productsTable"></tbody></table></div>
+          <div class="card" style="overflow:auto"><table><thead><tr><th>صورة المنتج</th><th>المنتج</th><th>التصنيف</th><th>الوحدة</th><th>سعر الشراء</th><th>الحد الأدنى</th><th>الظهور</th><th>إجراء</th></tr></thead><tbody id="productsTable"></tbody></table></div>
         </section>
         <section id="recipes" class="section">
           <div class="toolbar"><input id="recipeSearch" class="field search" placeholder="البحث عن وصفة..."/><div class="actions"><button id="addRecipeBtn" type="button" class="btn btn-primary" onclick="window.openNewRecipe();return false;">+ إضافة وصفة</button></div></div>
@@ -111,6 +113,26 @@
           <div class="toolbar"><div></div><div class="actions"><button id="addPurchaseBtn" class="btn btn-primary">+ تسجيل شراء</button></div></div>
           <div class="card" style="overflow:auto"><table><thead><tr><th>التاريخ</th><th>المورد</th><th>صور المنتجات</th><th>رقم الفاتورة</th><th>الإجمالي</th><th>طريقة الدفع</th><th>عدد المنتجات</th></tr></thead><tbody id="purchasesTable"></tbody></table></div>
         </section>
+
+        <section id="sales" class="section">
+          <div class="toolbar">
+            <input id="salesSearch" class="field search" placeholder="البحث في المبيعات..."/>
+            <div class="actions"><button id="addSaleBtn" class="btn btn-primary">+ تسجيل عملية بيع</button></div>
+          </div>
+          <div class="grid stats" style="margin-bottom:16px">
+            <div class="card stat"><small>مبيعات اليوم</small><strong id="sSalesToday">0 DH</strong></div>
+            <div class="card stat"><small>عدد عمليات البيع اليوم</small><strong id="sSalesCountToday">0</strong></div>
+            <div class="card stat"><small>الكمية المباعة اليوم</small><strong id="sSalesQtyToday">0</strong></div>
+            <div class="card stat"><small>إجمالي المبيعات</small><strong id="sSalesTotal">0 DH</strong></div>
+          </div>
+          <div class="card" style="overflow:auto">
+            <table>
+              <thead><tr><th>التاريخ</th><th>المرجع</th><th>المنتجات</th><th>الإجمالي</th><th>طريقة الدفع</th><th>ملاحظة</th></tr></thead>
+              <tbody id="salesTable"></tbody>
+            </table>
+          </div>
+        </section>
+
       </div>
     </main>
   </section>
@@ -126,7 +148,7 @@ const DEFAULT_STATE={products:[
 {id:uuid(),name:'دجاج طازج',category:'مواد أولية',unit:'قطعة',price:28,min:20,qty:50},
 {id:uuid(),name:'بطاطس مجمدة',category:'مواد أولية',unit:'كغ',price:9,min:15,qty:12},
 {id:uuid(),name:'أرز',category:'مواد أولية',unit:'كغ',price:14,min:10,qty:30}
-],purchases:[],moves:[],recipes:[],productions:[]};
+],purchases:[],moves:[],recipes:[],productions:[],sales:[]};
 const state=JSON.parse(localStorage.getItem(KEY)||'null')||structuredClone(DEFAULT_STATE);
 let cloudReady=false, cloudSaveTimer=null, cloudSaving=false, cloudSaveAgain=false;
 function cloudHeaders(extra={}){return {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json',...extra}}
@@ -136,8 +158,8 @@ function setCloudStatus(text,type='busy'){
   el.style.display=document.getElementById('appView')?.classList.contains('hidden')?'none':'block';
   el.textContent=text;el.style.background=type==='ok'?'#e5f8ea':type==='error'?'#ffe8e8':'#fff3b5';el.style.borderColor=type==='ok'?'#72c987':type==='error'?'#e38b8b':'#e3bd00';
 }
-function normalizeStateData(d){return d&&typeof d==='object'?{products:Array.isArray(d.products)?d.products:[],purchases:Array.isArray(d.purchases)?d.purchases:[],moves:Array.isArray(d.moves)?d.moves:[],recipes:Array.isArray(d.recipes)?d.recipes:[],productions:Array.isArray(d.productions)?d.productions:[]}:structuredClone(DEFAULT_STATE)}
-function stateIsEmpty(d){return ['products','purchases','moves','recipes','productions'].every(k=>!Array.isArray(d[k])||d[k].length===0)}
+function normalizeStateData(d){return d&&typeof d==='object'?{products:Array.isArray(d.products)?d.products:[],purchases:Array.isArray(d.purchases)?d.purchases:[],moves:Array.isArray(d.moves)?d.moves:[],recipes:Array.isArray(d.recipes)?d.recipes:[],productions:Array.isArray(d.productions)?d.productions:[],sales:Array.isArray(d.sales)?d.sales:[]}:structuredClone(DEFAULT_STATE)}
+function stateIsEmpty(d){return ['products','purchases','moves','recipes','productions','sales'].every(k=>!Array.isArray(d[k])||d[k].length===0)}
 async function loadCloudState(){
   setCloudStatus('جاري الاتصال بالسحابة...');
   try{
@@ -165,8 +187,16 @@ async function saveCloudState(force=false){
 function queueCloudSave(){clearTimeout(cloudSaveTimer);cloudSaveTimer=setTimeout(()=>saveCloudState(),450)}
 if(!Array.isArray(state.recipes))state.recipes=[];
 if(!Array.isArray(state.productions))state.productions=[];
+if(!Array.isArray(state.sales))state.sales=[];
 state.productions.forEach(op=>{if(!op.startedTs&&op.startedAt){let t=Date.parse(op.startedAt);if(Number.isFinite(t))op.startedTs=t}if(!Array.isArray(op.componentsUsed)&&op.rawProductId){op.componentsUsed=[{productId:op.rawProductId,qty:Number(op.inputQty||0)}]}if(!op.outputProductId&&op.rawProductId){let raw=state.products.find(p=>p.id===op.rawProductId);if(raw?.outputProductId)op.outputProductId=raw.outputProductId}});
-state.products.forEach(p=>{if(!('image' in p))p.image='';if(!Array.isArray(p.components))p.components=[];if(!('productType' in p))p.productType='standard';if(!('outputProductId' in p))p.outputProductId=''});
+state.products.forEach(p=>{
+  if(!('image' in p))p.image='';
+  if(!Array.isArray(p.components))p.components=[];
+  if(!('productType' in p))p.productType='standard';
+  if(!('outputProductId' in p))p.outputProductId='';
+  if(!('trackInventory' in p))p.trackInventory=true;
+  if(!('availableForSale' in p))p.availableForSale=Boolean((p.components||[]).length||p.productType==='prepared');
+});
 state.moves.forEach(m=>{if(!m.id)m.id=uuid();if(!m.productId){let p=state.products.find(x=>x.name===m.product);if(p)m.productId=p.id}if(!m.direction)m.direction=String(m.type||'').includes('دخول')?'in':String(m.type||'').includes('خروج')?'out':'adjust';if(!m.note)m.note=''});
 const placeholderImage=`data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120"><rect width="100%" height="100%" rx="18" fill="#fff3b5"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-size="46">📦</text></svg>')}`;
 function productImage(p){return p&&p.image?p.image:placeholderImage}
@@ -245,26 +275,48 @@ document.addEventListener('click',function(e){
 window.openRecipeEditor=id=>{let r=state.recipes.find(x=>x.id===id);if(!r)return;openModal('تعديل الوصفة',recipeFormHtml(r));setTimeout(()=>bindRecipeForm(r),0)};
 function renderAll(){
  const q1=($('#productSearch')?.value||'').toLowerCase(), q2=($('#inventorySearch')?.value||'').toLowerCase();
- $('#productsTable').innerHTML=state.products.filter(p=>p.name.toLowerCase().includes(q1)).map(p=>`<tr class="clickable-row" onclick="openProductEditor('${p.id}')"><td><img class="product-img" src="${productImage(p)}" alt="${esc(p.name)}"></td><td><b>${esc(p.name)}</b>${p.components.length?`<small class="subline">مركب من ${p.components.length} منتج</small>`:''}</td><td>${esc(p.category)}</td><td>${esc(p.unit)}</td><td>${fmt(productUnitCost(p))} DH${p.components?.length?'<small class="subline">تكلفة محسوبة</small>':''}</td><td>${fmt(p.min)}</td><td><button class="btn btn-light" onclick="event.stopPropagation();openProductEditor('${p.id}')">فتح وتعديل</button></td></tr>`).join('')||`<tr><td colspan="7" class="empty">لا توجد منتجات</td></tr>`;
- $('#inventoryTable').innerHTML=state.products.filter(p=>p.name.toLowerCase().includes(q2)).map(p=>{let s=status(p);return `<tr class="clickable-row" onclick="openInventoryDetails('${p.id}')"><td><img class="product-img" src="${productImage(p)}" alt="${esc(p.name)}"></td><td><b>${esc(p.name)}</b><small class="subline">اضغط لعرض الحركات</small></td><td>${fmt(p.qty)}</td><td>${esc(p.unit)}</td><td><b>${fmt(p.qty*productUnitCost(p))} DH</b></td><td><span class="badge ${s[1]}">${s[0]}</span></td></tr>`}).join('')||`<tr><td colspan="6" class="empty">المخزون فارغ</td></tr>`;
+ $('#productsTable').innerHTML=state.products.filter(p=>p.name.toLowerCase().includes(q1)).map(p=>`<tr class="clickable-row" onclick="openProductEditor('${p.id}')"><td><img class="product-img" src="${productImage(p)}" alt="${esc(p.name)}"></td><td><b>${esc(p.name)}</b>${p.components.length?`<small class="subline">مركب من ${p.components.length} منتج</small>`:''}</td><td>${esc(p.category)}</td><td>${esc(p.unit)}</td><td>${fmt(productUnitCost(p))} DH${p.components?.length?'<small class="subline">تكلفة محسوبة</small>':''}</td><td>${fmt(p.min)}</td><td><small class="subline">${p.trackInventory!==false?'المخزون ✓':'المخزون ✕'}</small><small class="subline">${p.availableForSale===true?'المبيعات ✓':'المبيعات ✕'}</small></td><td><button class="btn btn-light" onclick="event.stopPropagation();openProductEditor('${p.id}')">فتح وتعديل</button></td></tr>`).join('')||`<tr><td colspan="8" class="empty">لا توجد منتجات</td></tr>`;
+ $('#inventoryTable').innerHTML=state.products.filter(p=>p.trackInventory!==false&&p.name.toLowerCase().includes(q2)).map(p=>{let s=status(p);return `<tr class="clickable-row" onclick="openInventoryDetails('${p.id}')"><td><img class="product-img" src="${productImage(p)}" alt="${esc(p.name)}"></td><td><b>${esc(p.name)}</b><small class="subline">اضغط لعرض الحركات</small></td><td>${fmt(p.qty)}</td><td>${esc(p.unit)}</td><td><b>${fmt(p.qty*productUnitCost(p))} DH</b></td><td><span class="badge ${s[1]}">${s[0]}</span></td></tr>`}).join('')||`<tr><td colspan="6" class="empty">المخزون فارغ</td></tr>`;
  const rq=($('#recipeSearch')?.value||'').toLowerCase();
  $('#recipesGrid').innerHTML=state.recipes.filter(r=>r.name.toLowerCase().includes(rq)).map(r=>{let total=recipeTotalCost(r),per=Number(r.outputQty||1)>0?total/Number(r.outputQty):total;return `<div class="recipe-card" onclick="openRecipeEditor('${r.id}')"><div class="recipe-head"><div><h3 style="margin:0">${esc(r.name)}</h3><small>${fmt(r.outputQty)} ${esc(r.outputUnit||'كغ')} • ${r.ingredients.length} مكوّن</small></div><span class="badge ${r.published?'published':'draft'}">${r.published?'منشورة':'مسودة'}</span></div><div style="margin-top:12px"><small>التكلفة الحالية للوصفة</small><div class="recipe-cost">${fmt(total)} DH</div><small>التكلفة لكل ${esc(r.outputUnit||'كغ')}: <b>${fmt(per)} DH</b></small></div><div class="recipe-lines">${r.ingredients.slice(0,5).map(i=>{let p=state.products.find(x=>x.id===i.productId);return `<div class="recipe-line"><span>${esc(p?.name||'منتج محذوف')}</span><b>${fmt(i.qty)} ${esc(i.unit)}</b><small>${fmt(ingredientCost(i))} DH</small></div>`}).join('')}${r.ingredients.length>5?`<small>+ ${r.ingredients.length-5} مكونات أخرى</small>`:''}</div></div>`}).join('')||'<div class="card empty">لا توجد وصفات بعد</div>';
  const pq=($('#productionSearch')?.value||'').toLowerCase();
  function elapsedText(op){let end=op.completedTs||Date.now(),start=op.startedTs||0;if(!start)return '—';let sec=Math.max(0,Math.floor((end-start)/1000)),h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),ss=sec%60;return [h,m,ss].map(x=>String(x).padStart(2,'0')).join(':')}
  $('#productionTable').innerHTML=[...state.productions].reverse().filter(x=>{let out=state.products.find(p=>p.id===x.outputProductId),names=(x.componentsUsed||[]).map(c=>state.products.find(p=>p.id===c.productId)?.name||'').join(' ');return !pq||((out?.name||'')+' '+names).toLowerCase().includes(pq)}).map(x=>{let out=state.products.find(p=>p.id===x.outputProductId);let comps=x.componentsUsed||[];let inputTotal=comps.reduce((a,c)=>a+Number(c.qty||0),0),diff=x.status==='completed'?Number(x.outputQty||0)-inputTotal:null;let compHtml=comps.map(c=>{let p=state.products.find(z=>z.id===c.productId);return `<div><b>${esc(p?.name||'منتج محذوف')}</b>: ${fmt(c.qty)} ${esc(p?.unit||'')}</div>`}).join('');return `<tr><td>${esc(x.startedAt)}</td><td><b>${esc(out?.name||'منتج محذوف')}</b><small style="display:block">${esc(x.operator||'')}</small></td><td>${compHtml||'—'}</td><td>${x.status==='completed'?fmt(x.outputQty)+' '+esc(out?.unit||''):'—'}</td><td>${diff===null?'—':`<b style="color:${diff<0?'#b00000':'#138a36'}">${diff>0?'+':''}${fmt(diff)}</b>`}</td><td class="production-timer" data-production-id="${x.id}">${elapsedText(x)}</td><td><span class="badge ${x.status==='completed'?'ok':'low'}">${x.status==='completed'?'مكتمل':'في طور التحضير'}</span></td><td>${x.status==='preparing'?`<button type="button" class="btn btn-yellow finish-production-btn" data-production-id="${x.id}" onclick="window.finishProductionNative('${x.id}');return false;">إنهاء التحضير</button>`:'تم'}</td></tr>`}).join('')||'<tr><td colspan="8" class="empty">لا توجد عمليات إنتاج</td></tr>';
  let prodToday=new Date().toISOString().slice(0,10),doneToday=state.productions.filter(x=>x.status==='completed'&&x.completedDate===prodToday);$('#sPreparing').textContent=state.productions.filter(x=>x.status==='preparing').length;$('#sProductionToday').textContent=doneToday.length;$('#sRawToday').textContent=fmt(doneToday.reduce((a,x)=>a+(x.componentsUsed||[]).reduce((b,c)=>b+Number(c.qty||0),0),0));$('#sReadyToday').textContent=fmt(doneToday.reduce((a,x)=>a+Number(x.outputQty||0),0));
+
+ const sq=($('#salesSearch')?.value||'').toLowerCase();
+ $('#salesTable').innerHTML=[...state.sales].reverse().filter(s=>{
+   let names=(s.lines||[]).map(l=>state.products.find(p=>p.id===l.productId)?.name||'').join(' ');
+   return !sq||((s.reference||'')+' '+names+' '+(s.note||'')).toLowerCase().includes(sq);
+ }).map(s=>`<tr><td>${esc(s.date)}</td><td>${esc(s.reference||'-')}</td><td>${(s.lines||[]).map(l=>{let p=state.products.find(x=>x.id===l.productId);return `<div><b>${esc(p?.name||'منتج محذوف')}</b>: ${fmt(l.qty)} ${esc(p?.unit||'')} × ${fmt(l.price)} DH</div>`}).join('')}</td><td><b>${fmt(s.total)} DH</b></td><td>${esc(s.payment||'-')}</td><td>${esc(s.note||'-')}</td></tr>`).join('')||'<tr><td colspan="6" class="empty">لم يتم تسجيل مبيعات بعد</td></tr>';
+ let salesToday=new Date().toISOString().slice(0,10),todaySales=state.sales.filter(s=>s.date===salesToday);
+ $('#sSalesToday').textContent=fmt(todaySales.reduce((a,s)=>a+Number(s.total||0),0))+' DH';
+ $('#sSalesCountToday').textContent=todaySales.length;
+ $('#sSalesQtyToday').textContent=fmt(todaySales.reduce((a,s)=>a+(s.lines||[]).reduce((b,l)=>b+Number(l.qty||0),0),0));
+ $('#sSalesTotal').textContent=fmt(state.sales.reduce((a,s)=>a+Number(s.total||0),0))+' DH';
+
  $('#purchasesTable').innerHTML=[...state.purchases].reverse().map(x=>`<tr><td>${x.date}</td><td>${esc(x.supplier)}</td><td><div class="purchase-products">${x.lines.slice(0,5).map(l=>{let p=state.products.find(z=>z.id===l.productId);return `<img src="${productImage(p)}" title="${esc(p?p.name:'منتج')}">`}).join('')}${x.lines.length>5?`<span>+${x.lines.length-5}</span>`:''}</div></td><td>${esc(x.invoice||'-')}</td><td>${fmt(x.total)} DH</td><td>${esc(x.payment)}</td><td>${x.lines.length}</td></tr>`).join('')||`<tr><td colspan="7" class="empty">لم يتم تسجيل مشتريات بعد</td></tr>`;
- $('#sProducts').textContent=state.products.length;$('#sValue').textContent=fmt(state.products.reduce((a,p)=>a+p.qty*productUnitCost(p),0))+' DH';$('#sLow').textContent=state.products.filter(p=>p.qty<=p.min).length;
- let today=new Date().toISOString().slice(0,10);$('#sPurchases').textContent=fmt(state.purchases.filter(x=>x.date===today).reduce((a,x)=>a+x.total,0))+' DH';
+ $('#sProducts').textContent=state.products.length;$('#sValue').textContent=fmt(state.products.filter(p=>p.trackInventory!==false).reduce((a,p)=>a+p.qty*productUnitCost(p),0))+' DH';$('#sLow').textContent=state.products.filter(p=>p.trackInventory!==false&&p.qty<=p.min).length;
+ let today=new Date().toISOString().slice(0,10);$('#sPurchases').textContent=fmt(state.purchases.filter(x=>x.date===today).reduce((a,x)=>a+x.total,0))+' DH';$('#sDashboardSales').textContent=fmt(state.sales.filter(x=>x.date===today).reduce((a,x)=>a+Number(x.total||0),0))+' DH';
  $('#recentMoves').innerHTML=[...state.moves].reverse().slice(0,8).map(m=>`<div style="padding:10px 0;border-bottom:1px solid #eee"><b>${esc(m.product)}</b> — ${esc(m.type)} ${fmt(m.qty)} <small style="color:#777">${esc(m.date)}</small></div>`).join('')||'<div class="empty">لا توجد حركات بعد</div>';
 }
-$('#productSearch').oninput=renderAll;$('#inventorySearch').oninput=renderAll;$('#recipeSearch').oninput=renderAll;$('#productionSearch').oninput=renderAll;
+$('#productSearch').oninput=renderAll;$('#inventorySearch').oninput=renderAll;$('#recipeSearch').oninput=renderAll;$('#productionSearch').oninput=renderAll;$('#salesSearch').oninput=renderAll;
 function openModal(title,html){$('#modalTitle').textContent=title;$('#modalBody').innerHTML=html;$('#modal').classList.remove('hidden')};function closeModal(){$('#modal').classList.add('hidden')};$('#closeModal').onclick=closeModal;$('#modal').onclick=e=>{if(e.target.id==='modal')closeModal()};
 function unitOptions(selected){return ['كغ','لتر','قطعة','علبة','كرتون'].map(x=>`<option ${x===selected?'selected':''}>${x}</option>`).join('')}
 function selectedComponentsHtml(selected=[]){
  return selected.length?selected.map(c=>{let x=state.products.find(z=>z.id===c.productId);if(!x)return '';return `<div class="selected-component" data-id="${x.id}"><img src="${productImage(x)}"><div><span class="component-name">${esc(x.name)}</span><small class="component-meta">${esc(x.category)} • ${esc(x.unit)}</small></div><div class="comp-qty-wrap"><input type="number" min="0.001" step="0.001" class="field selected-comp-qty" value="${c.qty||1}" aria-label="كمية المكوّن"></div><button type="button" class="btn btn-danger remove-component">حذف</button></div>`}).join(''):'<div class="component-empty">لم تتم إضافة مكونات بعد. اضغط على «إضافة مكوّن» ثم ابحث عن المنتج.</div>'
 }
-function productFormHtml(p){let edit=!!p;return `<form id="productForm" class="form-grid"><div class="full"><label>صورة المنتج</label><div class="image-upload"><img id="productPreview" class="product-img-lg" src="${productImage(p)}"><div style="flex:1"><input id="productImageInput" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="field"><small style="color:#777">اختر صورة محفوظة من المعرض أو الملفات.</small>${edit&&p.image?'<button type="button" id="removeImageBtn" class="btn btn-light" style="margin-top:8px">إزالة الصورة</button>':''}</div></div></div><div class="full"><label>اسم المنتج</label><input name="name" class="field" value="${esc(p?.name||'')}" required></div><div><label>التصنيف</label><input name="category" class="field" value="${esc(p?.category||'مواد أولية')}" required></div><div><label>الوحدة</label><select name="unit" class="field">${unitOptions(p?.unit||'كغ')}</select></div><div><label>نوع المنتج</label><select name="productType" class="field"><option value="standard" ${p?.productType==='standard'?'selected':''}>منتج عادي</option><option value="raw" ${p?.productType==='raw'?'selected':''}>مادة خام للتحضير</option><option value="prepared" ${p?.productType==='prepared'?'selected':''}>منتج جاهز / VRAC</option></select></div><div><label>سعر الشراء / التكلفة <small style="color:#777">(اختياري)</small></label><input name="price" type="number" min="0" step="0.01" class="field" value="${p?.price??''}" placeholder="يُحدَّث تلقائيًا من فاتورة الشراء"><small class="subline">يمكن تركه فارغًا عند إنشاء المنتج؛ آخر سعر في فاتورة الشراء سيُعتمد تلقائيًا.</small></div><div><label>الحد الأدنى</label><input name="min" type="number" step="0.01" class="field" value="${p?.min??0}"></div><div class="full composition-box"><div class="composition-head"><div><h4>تركيب المنتج</h4><p class="muted">أضف المواد التي يُحضّر منها هذا المنتج. مثال: Tomate VRAC يتكوّن من Tomate بكمية 1.</p></div><div style="display:flex;gap:8px;align-items:center"><span id="componentCount" class="component-count">0 مكوّن</span><button type="button" id="openComponentPicker" class="btn btn-yellow">+ إضافة مكوّن</button></div></div><div id="selectedComponents" class="selected-components"></div><div id="compositionLiveCost" class="card" style="margin-top:12px;background:#fff8dd"><div>التكلفة المحسوبة للمنتج المركب: <b id="compositionLiveCostValue">0 DH</b></div><small>تُحسب تلقائيًا من كميات المكونات وآخر أسعارها المسجلة في فواتير الشراء.</small></div><div id="componentPickerPanel" class="component-picker-panel"><div class="picker-tools"><input id="componentSearch" class="field" placeholder="ابحث باسم المنتج أو التصنيف..."><select id="componentCategory" class="field"><option value="">كل التصنيفات</option></select></div><div id="componentResults" class="component-results"></div></div></div><div class="full form-actions"><button class="btn btn-primary" style="flex:1">${edit?'حفظ التعديلات':'حفظ المنتج'}</button>${edit?'<button type="button" id="deleteProductBtn" class="btn btn-danger">حذف المنتج</button>':''}</div></form>`}
+function productFormHtml(p){let edit=!!p;return `<form id="productForm" class="form-grid"><div class="full"><label>صورة المنتج</label><div class="image-upload"><img id="productPreview" class="product-img-lg" src="${productImage(p)}"><div style="flex:1"><input id="productImageInput" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="field"><small style="color:#777">اختر صورة محفوظة من المعرض أو الملفات.</small>${edit&&p.image?'<button type="button" id="removeImageBtn" class="btn btn-light" style="margin-top:8px">إزالة الصورة</button>':''}</div></div></div><div class="full"><label>اسم المنتج</label><input name="name" class="field" value="${esc(p?.name||'')}" required></div><div><label>التصنيف</label><input name="category" class="field" value="${esc(p?.category||'مواد أولية')}" required></div><div><label>الوحدة</label><select name="unit" class="field">${unitOptions(p?.unit||'كغ')}</select></div><div><label>نوع المنتج</label><select name="productType" class="field"><option value="standard" ${p?.productType==='standard'?'selected':''}>منتج عادي</option><option value="raw" ${p?.productType==='raw'?'selected':''}>مادة خام للتحضير</option><option value="prepared" ${p?.productType==='prepared'?'selected':''}>منتج جاهز / VRAC</option></select></div><div><label>سعر الشراء / التكلفة <small style="color:#777">(اختياري)</small></label><input name="price" type="number" min="0" step="0.01" class="field" value="${p?.price??''}" placeholder="يُحدَّث تلقائيًا من فاتورة الشراء"><small class="subline">يمكن تركه فارغًا عند إنشاء المنتج؛ آخر سعر في فاتورة الشراء سيُعتمد تلقائيًا.</small></div><div><label>الحد الأدنى</label><input name="min" type="number" step="0.01" class="field" value="${p?.min??0}"></div><div class="full card" style="background:#fff8dd">
+  <h4 style="margin-top:0">إعدادات ظهور المنتج</h4>
+  <label style="display:flex;align-items:center;gap:10px;margin:12px 0">
+    <input name="trackInventory" type="checkbox" ${p?.trackInventory!==false?'checked':''}>
+    <span><b>يُضاف إلى المخزون</b><small class="subline">يظهر في قسم المخزون وتتحرك كميته مع الشراء والإنتاج والبيع.</small></span>
+  </label>
+  <label style="display:flex;align-items:center;gap:10px;margin:12px 0">
+    <input name="availableForSale" type="checkbox" ${p?.availableForSale===true?'checked':''}>
+    <span><b>يُضاف إلى المبيعات</b><small class="subline">يظهر في قسم المبيعات ويمكن تسجيل بيعه.</small></span>
+  </label>
+</div><div class="full composition-box"><div class="composition-head"><div><h4>تركيب المنتج</h4><p class="muted">أضف المواد التي يُحضّر منها هذا المنتج. مثال: Tomate VRAC يتكوّن من Tomate بكمية 1.</p></div><div style="display:flex;gap:8px;align-items:center"><span id="componentCount" class="component-count">0 مكوّن</span><button type="button" id="openComponentPicker" class="btn btn-yellow">+ إضافة مكوّن</button></div></div><div id="selectedComponents" class="selected-components"></div><div id="compositionLiveCost" class="card" style="margin-top:12px;background:#fff8dd"><div>التكلفة المحسوبة للمنتج المركب: <b id="compositionLiveCostValue">0 DH</b></div><small>تُحسب تلقائيًا من كميات المكونات وآخر أسعارها المسجلة في فواتير الشراء.</small></div><div id="componentPickerPanel" class="component-picker-panel"><div class="picker-tools"><input id="componentSearch" class="field" placeholder="ابحث باسم المنتج أو التصنيف..."><select id="componentCategory" class="field"><option value="">كل التصنيفات</option></select></div><div id="componentResults" class="component-results"></div></div></div><div class="full form-actions"><button class="btn btn-primary" style="flex:1">${edit?'حفظ التعديلات':'حفظ المنتج'}</button>${edit?'<button type="button" id="deleteProductBtn" class="btn btn-danger">حذف المنتج</button>':''}</div></form>`}
 function bindProductForm(p){
  let input=$('#productImageInput'),preview=$('#productPreview'),removeImage=false;
  let selected=(p?.components||[]).map(c=>({productId:c.productId,qty:Number(c.qty)||1}));
@@ -297,9 +349,78 @@ window.openProductEditor=id=>{let p=state.products.find(x=>x.id===id);if(!p)retu
 window.removeProduct=id=>{let p=state.products.find(x=>x.id===id);if(!p)return;let used=state.products.filter(x=>(x.components||[]).some(c=>c.productId===id));if(used.length)return alert('لا يمكن حذف هذا المنتج لأنه مستخدم في تركيب: '+used.map(x=>x.name).join('، '));if(confirm('حذف المنتج '+p.name+'؟ سيتم حذف سجل حركاته أيضًا.')){state.products=state.products.filter(x=>x.id!==id);state.moves=state.moves.filter(m=>m.productId!==id);save();closeModal()}};
 window.openInventoryDetails=id=>{let p=state.products.find(x=>x.id===id);if(!p)return;let moves=state.moves.filter(m=>m.productId===id||(!m.productId&&m.product===p.name)).reverse();let totalIn=moves.filter(m=>m.direction==='in').reduce((a,m)=>a+Number(m.qty||0),0),totalOut=moves.filter(m=>m.direction==='out').reduce((a,m)=>a+Number(m.qty||0),0);openModal('حركات المنتج',`<div class="product-detail-head"><img class="product-img-lg" src="${productImage(p)}"><div><h3>${esc(p.name)}</h3><div class="detail-grid"><div><small>الكمية الحالية</small><b>${fmt(p.qty)} ${esc(p.unit)}</b></div><div><small>قيمة السطوك</small><b>${fmt(p.qty*productUnitCost(p))} DH</b></div><div><small>مجموع الداخل</small><b>${fmt(totalIn)}</b></div><div><small>مجموع الخارج</small><b>${fmt(totalOut)}</b></div></div></div></div><div class="toolbar" style="margin-top:18px"><h4>سجل التحركات</h4><button class="btn btn-yellow" onclick="closeModal();setTimeout(()=>openAdjustFor('${p.id}'),0)">تعديل الجرد</button></div><div class="moves-list">${moves.map(m=>`<div class="move-card ${m.direction}"><div><b>${esc(m.type)}</b><small>${esc(m.note||'')}</small></div><strong>${m.direction==='out'?'-':m.direction==='in'?'+':''}${fmt(m.qty)} ${esc(p.unit)}</strong><time>${esc(m.date)}</time></div>`).join('')||'<div class="empty">لا توجد حركات لهذا المنتج</div>'}</div>`)};
 window.openAdjustFor=id=>{let p=state.products.find(x=>x.id===id);if(!p)return;openModal('تعديل جرد '+p.name,`<form id="adjustForm" class="form-grid"><div class="full"><label>الكمية الحالية</label><input class="field" value="${fmt(p.qty)} ${esc(p.unit)}" disabled></div><div><label>الكمية الجديدة</label><input name="qty" type="number" step="0.01" class="field" value="${p.qty}" required></div><div><label>ملاحظة</label><input name="note" class="field" value="جرد يدوي"></div><div class="full"><button class="btn btn-yellow" style="width:100%">تحديث المخزون</button></div></form>`);setTimeout(()=>$('#adjustForm').onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),old=Number(p.qty),next=+f.get('qty'),diff=next-old;p.qty=next;state.moves.push({id:uuid(),productId:p.id,product:p.name,type:'تعديل جرد',direction:diff>0?'in':diff<0?'out':'adjust',qty:Math.abs(diff),note:`من ${fmt(old)} إلى ${fmt(next)} — ${f.get('note')}`,date:new Date().toLocaleString('ar-MA')});save();closeModal()},0)};
-$('#adjustBtn').onclick=()=>{if(!state.products.length)return alert('لا توجد منتجات');openModal('اختيار منتج للجرد',`<div class="product-picker">${state.products.map(p=>`<button class="picker-item" onclick="closeModal();setTimeout(()=>openAdjustFor('${p.id}'),0)"><img src="${productImage(p)}"><span>${esc(p.name)}</span><b>${fmt(p.qty)} ${esc(p.unit)}</b></button>`).join('')}</div>`)};
-$('#addPurchaseBtn').onclick=()=>{if(!state.products.length)return alert('أضف منتجًا أولًا');openModal('تسجيل عملية شراء',`<form id="purchaseForm"><div class="form-grid"><div><label>المورد</label><input name="supplier" class="field" required></div><div><label>رقم الفاتورة</label><input name="invoice" class="field"></div><div><label>التاريخ</label><input name="date" type="date" class="field" value="${new Date().toISOString().slice(0,10)}" required></div><div><label>طريقة الدفع</label><select name="payment" class="field"><option>نقدًا</option><option>آجلًا</option><option>تحويل بنكي</option></select></div></div><h4>المنتجات</h4><div id="purchaseLines" class="purchase-lines"></div><button type="button" id="addLine" class="btn btn-light" style="margin:10px 0">+ إضافة سطر</button><button class="btn btn-primary" style="width:100%">تأكيد الشراء وإضافة الكميات للمخزون</button></form>`);setTimeout(()=>{let lines=$('#purchaseLines');function add(){let d=document.createElement('div');d.className='purchase-line';d.innerHTML=`<div><label>المنتج</label><div class="product-cell"><img class="product-img line-img" src="${productImage(state.products[0])}"><select class="field prod">${state.products.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></div></div><div><label>الكمية</label><input type="number" step="0.01" class="field qty" required></div><div><label>السعر</label><input type="number" step="0.01" class="field price" required></div><button type="button" class="btn btn-danger remove">حذف</button>`;d.querySelector('.remove').onclick=()=>d.remove();d.querySelector('.prod').onchange=()=>{let p=state.products.find(p=>p.id===d.querySelector('.prod').value);d.querySelector('.price').value=Number(p.price||0)||'';d.querySelector('.line-img').src=productImage(p)};d.querySelector('.prod').onchange();lines.appendChild(d)}add();$('#addLine').onclick=add;$('#purchaseForm').onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),rows=[...lines.children],pls=rows.map(r=>({productId:r.querySelector('.prod').value,qty:+r.querySelector('.qty').value,price:+r.querySelector('.price').value})).filter(x=>x.qty>0);if(!pls.length)return alert('أضف كمية صحيحة');let total=0;pls.forEach(l=>{let p=state.products.find(x=>x.id===l.productId);p.qty+=l.qty;p.price=l.price;total+=l.qty*l.price;state.moves.push({id:uuid(),productId:p.id,product:p.name,type:'دخول شراء',direction:'in',qty:l.qty,note:`المورد: ${f.get('supplier')} — الفاتورة: ${f.get('invoice')||'-'}`,date:new Date().toLocaleString('ar-MA')})});state.purchases.push({id:uuid(),supplier:f.get('supplier'),invoice:f.get('invoice'),date:f.get('date'),payment:f.get('payment'),lines:pls,total});save();closeModal()};},0)};
-window.startProduction=()=>{let outputs=state.products.filter(p=>(p.components||[]).length);if(!outputs.length)return alert('أنشئ منتجًا جاهزًا وأضف مكوناته أولًا، مثل Tomate VRAC مكوّنه Tomate.');openModal('بدء عملية تحضير',`<form id="productionStartForm" class="form-grid"><div class="full"><label>المنتج المراد تحضيره</label><select name="outputProductId" id="productionOutputProduct" class="field">${outputs.map(p=>`<option value="${p.id}">${esc(p.name)} — ${p.components.length} مكوّن</option>`).join('')}</select></div><div><label>حجم دفعة التحضير</label><input name="batchQty" type="number" min="0.001" step="0.001" class="field" value="1" required></div><div><label>المسؤول / المركز</label><input name="operator" class="field" placeholder="مثال: مركز السلطة"></div><div class="full card" id="productionNeeds"></div><div class="full"><label>ملاحظة</label><input name="note" class="field"></div><div class="full"><button class="btn btn-primary" style="width:100%">خصم المكونات وبدء التوقيت</button></div></form>`);setTimeout(()=>{let form=$('#productionStartForm'),sel=$('#productionOutputProduct'),batch=form.querySelector('[name=batchQty]'),needs=$('#productionNeeds');function calc(){let out=state.products.find(x=>x.id===sel.value),mult=Number(batch.value||0);needs.innerHTML='<b>سيتم خصم:</b>'+((out?.components||[]).map(c=>{let p=state.products.find(x=>x.id===c.productId),q=Number(c.qty||0)*mult;return `<div style="margin-top:6px">${esc(p?.name||'منتج محذوف')}: <b>${fmt(q)} ${esc(p?.unit||'')}</b> — المتوفر ${fmt(p?.qty||0)}</div>`}).join('')||'<div>لا توجد مكونات</div>')}sel.onchange=calc;batch.oninput=calc;calc();form.onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),out=state.products.find(x=>x.id===f.get('outputProductId')),mult=Number(f.get('batchQty'));if(!out||!(out.components||[]).length)return alert('تركيب المنتج غير صالح');if(mult<=0)return alert('أدخل حجم دفعة صحيح');let used=out.components.map(c=>{let p=state.products.find(x=>x.id===c.productId);return {productId:c.productId,qty:Number(c.qty||0)*mult,product:p}});let missing=used.find(x=>!x.product||Number(x.product.qty)<x.qty);if(missing)return alert(`المخزون غير كافٍ في ${missing.product?.name||'أحد المكونات'}. المتوفر: ${fmt(missing.product?.qty||0)}`);let id=uuid(),now=new Date();used.forEach(x=>{x.product.qty=Number(x.product.qty||0)-x.qty;state.moves.push({id:uuid(),productId:x.product.id,product:x.product.name,type:'خروج إلى التحضير',direction:'out',qty:x.qty,note:`تحضير ${out.name} — العملية ${id}`,date:now.toLocaleString('ar-MA')})});state.productions.push({id,outputProductId:out.id,batchQty:mult,componentsUsed:used.map(x=>({productId:x.productId,qty:x.qty})),outputQty:null,status:'preparing',operator:f.get('operator'),note:f.get('note'),startedAt:now.toLocaleString('ar-MA'),startedDate:now.toISOString().slice(0,10),startedTs:now.getTime()});save();closeModal()};},0)};
+$('#adjustBtn').onclick=()=>{let invProducts=state.products.filter(p=>p.trackInventory!==false);if(!invProducts.length)return alert('لا توجد منتجات مفعلة في المخزون');openModal('اختيار منتج للجرد',`<div class="product-picker">${invProducts.map(p=>`<button class="picker-item" onclick="closeModal();setTimeout(()=>openAdjustFor('${p.id}'),0)"><img src="${productImage(p)}"><span>${esc(p.name)}</span><b>${fmt(p.qty)} ${esc(p.unit)}</b></button>`).join('')}</div>`)};
+$('#addPurchaseBtn').onclick=()=>{let purchasableProducts=state.products.filter(p=>p.trackInventory!==false&&!(p.components||[]).length);if(!purchasableProducts.length)return alert('لا توجد مواد أولية قابلة للشراء. فعّل «يُضاف إلى المخزون» لمنتج غير مركب.');openModal('تسجيل عملية شراء',`<form id="purchaseForm"><div class="form-grid"><div><label>المورد</label><input name="supplier" class="field" required></div><div><label>رقم الفاتورة</label><input name="invoice" class="field"></div><div><label>التاريخ</label><input name="date" type="date" class="field" value="${new Date().toISOString().slice(0,10)}" required></div><div><label>طريقة الدفع</label><select name="payment" class="field"><option>نقدًا</option><option>آجلًا</option><option>تحويل بنكي</option></select></div></div><h4>المنتجات</h4><div id="purchaseLines" class="purchase-lines"></div><button type="button" id="addLine" class="btn btn-light" style="margin:10px 0">+ إضافة سطر</button><button class="btn btn-primary" style="width:100%">تأكيد الشراء وإضافة الكميات للمخزون</button></form>`);setTimeout(()=>{let lines=$('#purchaseLines');function add(){let d=document.createElement('div');d.className='purchase-line';d.innerHTML=`<div><label>المنتج</label><div class="product-cell"><img class="product-img line-img" src="${productImage(purchasableProducts[0])}"><select class="field prod">${purchasableProducts.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></div></div><div><label>الكمية</label><input type="number" step="0.01" class="field qty" required></div><div><label>السعر</label><input type="number" step="0.01" class="field price" required></div><button type="button" class="btn btn-danger remove">حذف</button>`;d.querySelector('.remove').onclick=()=>d.remove();d.querySelector('.prod').onchange=()=>{let p=state.products.find(p=>p.id===d.querySelector('.prod').value);d.querySelector('.price').value=Number(p.price||0)||'';d.querySelector('.line-img').src=productImage(p)};d.querySelector('.prod').onchange();lines.appendChild(d)}add();$('#addLine').onclick=add;$('#purchaseForm').onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),rows=[...lines.children],pls=rows.map(r=>({productId:r.querySelector('.prod').value,qty:+r.querySelector('.qty').value,price:+r.querySelector('.price').value})).filter(x=>x.qty>0);if(!pls.length)return alert('أضف كمية صحيحة');let total=0;pls.forEach(l=>{let p=state.products.find(x=>x.id===l.productId);p.qty+=l.qty;p.price=l.price;total+=l.qty*l.price;state.moves.push({id:uuid(),productId:p.id,product:p.name,type:'دخول شراء',direction:'in',qty:l.qty,note:`المورد: ${f.get('supplier')} — الفاتورة: ${f.get('invoice')||'-'}`,date:new Date().toLocaleString('ar-MA')})});state.purchases.push({id:uuid(),supplier:f.get('supplier'),invoice:f.get('invoice'),date:f.get('date'),payment:f.get('payment'),lines:pls,total});save();closeModal()};},0)};
+window.startProduction=()=>{let outputs=state.products.filter(p=>(p.components||[]).length&&p.trackInventory!==false);if(!outputs.length)return alert('أنشئ منتجًا جاهزًا وأضف مكوناته أولًا، مثل Tomate VRAC مكوّنه Tomate.');openModal('بدء عملية تحضير',`<form id="productionStartForm" class="form-grid"><div class="full"><label>المنتج المراد تحضيره</label><select name="outputProductId" id="productionOutputProduct" class="field">${outputs.map(p=>`<option value="${p.id}">${esc(p.name)} — ${p.components.length} مكوّن</option>`).join('')}</select></div><div><label>حجم دفعة التحضير</label><input name="batchQty" type="number" min="0.001" step="0.001" class="field" value="1" required></div><div><label>المسؤول / المركز</label><input name="operator" class="field" placeholder="مثال: مركز السلطة"></div><div class="full card" id="productionNeeds"></div><div class="full"><label>ملاحظة</label><input name="note" class="field"></div><div class="full"><button class="btn btn-primary" style="width:100%">خصم المكونات وبدء التوقيت</button></div></form>`);setTimeout(()=>{let form=$('#productionStartForm'),sel=$('#productionOutputProduct'),batch=form.querySelector('[name=batchQty]'),needs=$('#productionNeeds');function calc(){let out=state.products.find(x=>x.id===sel.value),mult=Number(batch.value||0);needs.innerHTML='<b>سيتم خصم:</b>'+((out?.components||[]).map(c=>{let p=state.products.find(x=>x.id===c.productId),q=Number(c.qty||0)*mult;return `<div style="margin-top:6px">${esc(p?.name||'منتج محذوف')}: <b>${fmt(q)} ${esc(p?.unit||'')}</b> — المتوفر ${fmt(p?.qty||0)}</div>`}).join('')||'<div>لا توجد مكونات</div>')}sel.onchange=calc;batch.oninput=calc;calc();form.onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),out=state.products.find(x=>x.id===f.get('outputProductId')),mult=Number(f.get('batchQty'));if(!out||!(out.components||[]).length)return alert('تركيب المنتج غير صالح');if(mult<=0)return alert('أدخل حجم دفعة صحيح');let used=out.components.map(c=>{let p=state.products.find(x=>x.id===c.productId);return {productId:c.productId,qty:Number(c.qty||0)*mult,product:p}});let untracked=used.find(x=>!x.product||x.product.trackInventory===false);if(untracked)return alert(`المكوّن ${untracked.product?.name||'غير موجود'} غير مفعّل في المخزون. فعّل «يُضاف إلى المخزون» أولًا.`);let missing=used.find(x=>!x.product||Number(x.product.qty)<x.qty);if(missing)return alert(`المخزون غير كافٍ في ${missing.product?.name||'أحد المكونات'}. المتوفر: ${fmt(missing.product?.qty||0)}`);let id=uuid(),now=new Date();used.forEach(x=>{x.product.qty=Number(x.product.qty||0)-x.qty;state.moves.push({id:uuid(),productId:x.product.id,product:x.product.name,type:'خروج إلى التحضير',direction:'out',qty:x.qty,note:`تحضير ${out.name} — العملية ${id}`,date:now.toLocaleString('ar-MA')})});state.productions.push({id,outputProductId:out.id,batchQty:mult,componentsUsed:used.map(x=>({productId:x.productId,qty:x.qty})),outputQty:null,status:'preparing',operator:f.get('operator'),note:f.get('note'),startedAt:now.toLocaleString('ar-MA'),startedDate:now.toISOString().slice(0,10),startedTs:now.getTime()});save();closeModal()};},0)};
+
+$('#addSaleBtn').onclick=()=>{
+  let saleProducts=state.products.filter(p=>p.availableForSale===true);
+  if(!saleProducts.length)return alert('لا توجد منتجات مفعلة للبيع. افتح المنتج وفعّل «يُضاف إلى المبيعات».');
+  openModal('تسجيل عملية بيع',`<form id="saleForm">
+    <div class="form-grid">
+      <div><label>المرجع / رقم الطلب</label><input name="reference" class="field" placeholder="اختياري"></div>
+      <div><label>التاريخ</label><input name="date" type="date" class="field" value="${new Date().toISOString().slice(0,10)}" required></div>
+      <div><label>طريقة الدفع</label><select name="payment" class="field"><option>نقدًا</option><option>بطاقة</option><option>تحويل</option><option>آجلًا</option></select></div>
+      <div><label>ملاحظة</label><input name="note" class="field"></div>
+    </div>
+    <h4>المنتجات المباعة</h4>
+    <div id="saleLines" class="purchase-lines"></div>
+    <button type="button" id="addSaleLine" class="btn btn-light" style="margin:10px 0">+ إضافة منتج</button>
+    <div class="card" style="margin:12px 0;background:#fff8dd">الإجمالي: <b id="saleLiveTotal">0 DH</b></div>
+    <button class="btn btn-primary" style="width:100%">تأكيد البيع وخصم المخزون</button>
+  </form>`);
+  setTimeout(()=>{
+    let lines=$('#saleLines');
+    function total(){
+      let value=[...lines.children].reduce((sum,row)=>sum+(Number(row.querySelector('.qty').value)||0)*(Number(row.querySelector('.price').value)||0),0);
+      $('#saleLiveTotal').textContent=fmt(value)+' DH';
+    }
+    function add(){
+      let first=saleProducts[0],d=document.createElement('div');d.className='purchase-line';
+      d.innerHTML=`<div><label>المنتج</label><div class="product-cell"><img class="product-img line-img" src="${productImage(first)}"><select class="field prod">${saleProducts.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></div></div>
+      <div><label>الكمية</label><input type="number" min="0.001" step="0.001" class="field qty" required></div>
+      <div><label>سعر البيع</label><input type="number" min="0" step="0.01" class="field price" required></div>
+      <button type="button" class="btn btn-danger remove">حذف</button>`;
+      let productSelect=d.querySelector('.prod'),qty=d.querySelector('.qty'),price=d.querySelector('.price');
+      function sync(){
+        let p=state.products.find(x=>x.id===productSelect.value);
+        d.querySelector('.line-img').src=productImage(p);
+        price.value=Number(p.salePrice||0)||'';
+        qty.max=p.trackInventory!==false?Number(p.qty||0):'';
+        total();
+      }
+      productSelect.onchange=sync;qty.oninput=total;price.oninput=total;
+      d.querySelector('.remove').onclick=()=>{d.remove();total()};
+      sync();lines.appendChild(d);
+    }
+    add();$('#addSaleLine').onclick=add;
+    $('#saleForm').onsubmit=e=>{
+      e.preventDefault();
+      let f=new FormData(e.target),rows=[...lines.children];
+      let saleLines=rows.map(r=>({productId:r.querySelector('.prod').value,qty:Number(r.querySelector('.qty').value),price:Number(r.querySelector('.price').value)})).filter(x=>x.qty>0&&x.price>=0);
+      if(!saleLines.length)return alert('أضف منتجًا وكمية صحيحة.');
+      for(let l of saleLines){
+        let p=state.products.find(x=>x.id===l.productId);
+        if(!p||p.availableForSale!==true)return alert('يوجد منتج غير متاح للبيع.');
+        if(p.trackInventory!==false&&Number(p.qty||0)<l.qty)return alert(`المخزون غير كافٍ في ${p.name}. المتوفر ${fmt(p.qty)} ${p.unit}`);
+      }
+      let now=new Date(),id=uuid(),totalValue=0;
+      saleLines.forEach(l=>{
+        let p=state.products.find(x=>x.id===l.productId);
+        totalValue+=l.qty*l.price;
+        p.salePrice=l.price;
+        if(p.trackInventory!==false){
+          p.qty=Number(p.qty||0)-l.qty;
+          state.moves.push({id:uuid(),productId:p.id,product:p.name,type:'خروج بيع',direction:'out',qty:l.qty,note:`عملية البيع ${f.get('reference')||id}`,date:now.toLocaleString('ar-MA')});
+        }
+      });
+      state.sales.push({id,reference:f.get('reference'),date:f.get('date'),payment:f.get('payment'),note:f.get('note'),lines:saleLines,total:totalValue,createdAt:now.toISOString()});
+      save();closeModal();
+      alert('تم تسجيل عملية البيع وخصم الكميات من المخزون.');
+    };
+  },100);
+};
+
 $('#startProductionBtn').onclick=startProduction;
 
 
@@ -350,7 +471,7 @@ window.finishProductionNative = function(id){
     let oldMovesLen=state.moves.length;
 
     let now=new Date();
-    out.qty=oldOutQty+qty;
+    if(out.trackInventory!==false)out.qty=oldOutQty+qty;
     op.outputQty=qty;
     op.status='completed';
     op.completedAt=now.toLocaleString('ar-MA');

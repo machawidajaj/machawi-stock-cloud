@@ -1,4 +1,4 @@
-const CACHE='machawi-stock-v7-optional-price-cost';
+const CACHE='machawi-stock-v8-sales-linked';
 const ASSETS=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./icon-maskable-512.png','./favicon.png','./app-icon.png'];
 
 self.addEventListener('install',event=>{
