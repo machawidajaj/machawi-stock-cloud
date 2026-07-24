@@ -1,4 +1,4 @@
-const CACHE='machawi-stock-v10-save-by-destination';
+const CACHE='machawi-stock-v12-final-login';
 const ASSETS=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./icon-maskable-512.png','./favicon.png','./app-icon.png'];
 
 self.addEventListener('install',event=>{
@@ -15,15 +15,14 @@ self.addEventListener('activate',event=>{
 });
 
 self.addEventListener('fetch',event=>{
+  if(event.request.method!=='GET')return;
   const req=event.request;
-  if(req.method!=='GET') return;
-
   const url=new URL(req.url);
-  const isDocument=req.mode==='navigate' || url.pathname.endsWith('/') || url.pathname.endsWith('/index.html');
+  const isPage=req.mode==='navigate'||url.pathname.endsWith('/')||url.pathname.endsWith('/index.html');
 
-  if(isDocument){
+  if(isPage){
     event.respondWith(
-      fetch(req)
+      fetch(req,{cache:'no-store'})
         .then(res=>{
           const copy=res.clone();
           caches.open(CACHE).then(cache=>cache.put('./index.html',copy));
@@ -35,7 +34,7 @@ self.addEventListener('fetch',event=>{
   }
 
   event.respondWith(
-    caches.match(req).then(cached=>cached || fetch(req).then(res=>{
+    caches.match(req).then(cached=>cached||fetch(req).then(res=>{
       const copy=res.clone();
       caches.open(CACHE).then(cache=>cache.put(req,copy));
       return res;
