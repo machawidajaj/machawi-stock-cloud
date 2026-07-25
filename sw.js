@@ -1,4 +1,4 @@
-const CACHE='machawi-stock-v15-users-permissions';
+const CACHE='machawi-v16-buttons-ringtones-fixed';
 const ASSETS=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./icon-maskable-512.png','./favicon.png','./app-icon.png'];
 
 self.addEventListener('install',event=>{
